@@ -1,0 +1,2142 @@
+<!DOCTYPE html>
+<html lang="vi">
+<head>
+  <meta charset="UTF-8" />
+  <meta name="viewport" content="width=device-width, initial-scale=1.0" />
+  <title>Vocab Studio — Học Từ Vựng Số Hóa</title>
+  <script src="https://cdn.tailwindcss.com"></script>
+  <link rel="preconnect" href="https://fonts.googleapis.com">
+  <link rel="preconnect" href="https://fonts.gstatic.com" crossorigin>
+  <link href="https://fonts.googleapis.com/css2?family=Plus+Jakarta+Sans:wght@400;500;600;700;800&family=JetBrains+Mono:wght@400;500&display=swap" rel="stylesheet">
+  <style>
+    body {
+      font-family: 'Plus Jakarta Sans', -apple-system, BlinkMacSystemFont, sans-serif;
+      background-color: #f8fafc;
+      color: #0f172a;
+    }
+    .mono {
+      font-family: 'JetBrains Mono', monospace;
+    }
+    .card-shadow {
+      box-shadow: 0 4px 20px -2px rgba(15, 23, 42, 0.06), 0 1px 3px 0 rgba(15, 23, 42, 0.04);
+    }
+    .glass-nav {
+      backdrop-filter: blur(12px);
+      background-color: rgba(255, 255, 255, 0.88);
+    }
+    /* Custom scrollbar */
+    ::-webkit-scrollbar {
+      width: 6px;
+      height: 6px;
+    }
+    ::-webkit-scrollbar-track {
+      background: #f1f5f9;
+    }
+    ::-webkit-scrollbar-thumb {
+      background: #cbd5e1;
+      border-radius: 9999px;
+    }
+    ::-webkit-scrollbar-thumb:hover {
+      background: #94a3b8;
+    }
+  </style>
+</head>
+<body class="min-h-screen flex flex-col">
+
+  <!-- Top Header & Navigation -->
+  <header class="sticky top-0 z-30 glass-nav border-b border-slate-200/80">
+    <div class="max-w-7xl mx-auto px-4 sm:px-6 lg:px-8">
+      <div class="flex flex-wrap items-center justify-between gap-3 py-3">
+        <!-- Brand -->
+        <div class="flex items-center gap-3">
+          <div class="w-10 h-10 rounded-xl bg-gradient-to-br from-indigo-600 to-violet-600 flex items-center justify-center text-white font-bold text-lg shadow-sm">
+            V
+          </div>
+          <div>
+            <h1 class="text-lg font-extrabold tracking-tight text-slate-900 leading-none">Vocab Studio</h1>
+            <p class="text-xs text-slate-500 mt-1">Từ vựng nâng cao • <span id="total-word-badge" class="font-semibold text-indigo-600">0 từ</span></p>
+          </div>
+        </div>
+
+        <!-- Global Controls: Randomize & Voice -->
+        <div class="flex items-center gap-2">
+          <button id="btn-shuffle" onclick="toggleShuffle()" title="Bật/Tắt thứ tự từ ngẫu nhiên"
+            class="inline-flex items-center gap-1.5 px-3 py-1.5 rounded-lg text-xs font-semibold border transition-all cursor-pointer bg-white text-slate-700 border-slate-200 hover:border-indigo-300 hover:text-indigo-600">
+            <svg class="w-4 h-4" fill="none" stroke="currentColor" stroke-width="2" viewBox="0 0 24 24">
+              <path stroke-linecap="round" stroke-linejoin="round" d="M16 3h5v5M4 20L21 3M21 16v5h-5M15 15l6 6M4 4l5 5"/>
+            </svg>
+            <span id="shuffle-label">Thứ tự: Gốc</span>
+          </button>
+
+          <select id="voice-select" title="Chọn giọng đọc tiếng Anh"
+            class="text-xs font-medium bg-white border border-slate-200 rounded-lg px-2.5 py-1.5 text-slate-700 focus:outline-none focus:ring-2 focus:ring-indigo-500 max-w-[150px] sm:max-w-[190px]">
+            <option value="">Giọng đọc mặc định</option>
+          </select>
+        </div>
+      </div>
+
+      <!-- Mode Tabs -->
+      <nav class="flex gap-1 overflow-x-auto pb-2 pt-1 -mb-px" aria-label="Chế độ học">
+        <button data-tab="glossary" onclick="switchTab('glossary')"
+          class="tab-btn px-3.5 py-2 rounded-lg text-sm font-semibold whitespace-nowrap transition-all cursor-pointer">
+          📖 Glossary &amp; Flashcard
+        </button>
+        <button data-tab="srs" onclick="switchTab('srs')"
+          class="tab-btn px-3.5 py-2 rounded-lg text-sm font-semibold whitespace-nowrap transition-all cursor-pointer flex items-center gap-1.5">
+          🔁 Lặp lại ngắt quãng
+          <span id="srs-due-badge" class="px-1.5 py-0.5 text-[11px] rounded-full bg-amber-100 text-amber-800 font-bold">0</span>
+        </button>
+        <button data-tab="quiz" onclick="switchTab('quiz')"
+          class="tab-btn px-3.5 py-2 rounded-lg text-sm font-semibold whitespace-nowrap transition-all cursor-pointer">
+          ✅ Trắc nghiệm
+        </button>
+        <button data-tab="sentence" onclick="switchTab('sentence')"
+          class="tab-btn px-3.5 py-2 rounded-lg text-sm font-semibold whitespace-nowrap transition-all cursor-pointer">
+          ✍️ Đặt câu
+        </button>
+        <button data-tab="context" onclick="switchTab('context')"
+          class="tab-btn px-3.5 py-2 rounded-lg text-sm font-semibold whitespace-nowrap transition-all cursor-pointer">
+          📰 Từ trong ngữ cảnh
+        </button>
+      </nav>
+    </div>
+  </header>
+
+  <!-- Main Content -->
+  <main class="flex-1 max-w-7xl w-full mx-auto px-4 sm:px-6 lg:px-8 py-6">
+
+    <!-- Progress Strip -->
+    <div class="bg-white rounded-2xl border border-slate-200/80 p-4 mb-6 card-shadow flex flex-col sm:flex-row sm:items-center justify-between gap-4">
+      <div class="flex-1">
+        <div class="flex items-center justify-between text-xs font-semibold mb-1.5">
+          <span class="text-slate-600">Tiến độ ghi nhớ (SRS Level &ge; 2)</span>
+          <span id="mastery-text" class="text-indigo-600">0 / 0 từ (0%)</span>
+        </div>
+        <div class="w-full h-2.5 bg-slate-100 rounded-full overflow-hidden">
+          <div id="mastery-bar" class="h-full bg-gradient-to-r from-indigo-500 to-emerald-500 rounded-full transition-all duration-500" style="width: 0%"></div>
+        </div>
+      </div>
+      <div class="flex items-center gap-4 text-xs text-slate-600 shrink-0">
+        <div class="flex items-center gap-1.5">
+          <span class="w-2.5 h-2.5 rounded-full bg-slate-300"></span>
+          <span>Mới: <strong id="stat-new">0</strong></span>
+        </div>
+        <div class="flex items-center gap-1.5">
+          <span class="w-2.5 h-2.5 rounded-full bg-amber-400"></span>
+          <span>Đang học: <strong id="stat-learning">0</strong></span>
+        </div>
+        <div class="flex items-center gap-1.5">
+          <span class="w-2.5 h-2.5 rounded-full bg-emerald-500"></span>
+          <span>Thành thạo: <strong id="stat-mastered">0</strong></span>
+        </div>
+      </div>
+    </div>
+
+    <!-- ==================== TAB 1: GLOSSARY & FLASHCARD ==================== -->
+    <section id="tab-glossary" class="tab-panel space-y-6">
+      <!-- Filter & View Switcher -->
+      <div class="flex flex-col md:flex-row md:items-center justify-between gap-3">
+        <div class="flex flex-wrap items-center gap-2">
+          <div class="relative flex-1 sm:w-72">
+            <input id="search-input" type="text" oninput="renderGlossary()" placeholder="Tìm từ vựng, nghĩa, collocation..."
+              class="w-full pl-9 pr-3 py-2 text-sm bg-white border border-slate-200 rounded-xl focus:outline-none focus:ring-2 focus:ring-indigo-500" />
+            <svg class="w-4 h-4 text-slate-400 absolute left-3 top-2.5" fill="none" stroke="currentColor" stroke-width="2" viewBox="0 0 24 24">
+              <path stroke-linecap="round" stroke-linejoin="round" d="M21 21l-4.35-4.35m0 0A7.5 7.5 0 103.5 10.5a7.5 7.5 0 0013.15 6.15z"/>
+            </svg>
+          </div>
+
+          <select id="filter-status" onchange="renderGlossary()"
+            class="text-sm bg-white border border-slate-200 rounded-xl px-3 py-2 text-slate-700 focus:outline-none focus:ring-2 focus:ring-indigo-500">
+            <option value="all">Tất cả trạng thái</option>
+            <option value="new">Chưa học</option>
+            <option value="learning">Đang học</option>
+            <option value="mastered">Đã thành thạo</option>
+          </select>
+
+          <select id="filter-detail" onchange="renderGlossary()"
+            class="text-sm bg-white border border-slate-200 rounded-xl px-3 py-2 text-slate-700 focus:outline-none focus:ring-2 focus:ring-indigo-500">
+            <option value="all">Tất cả từ trong file</option>
+            <option value="rich">Có sẵn ví dụ &amp; nghĩa chi tiết</option>
+          </select>
+        </div>
+
+        <div class="inline-flex rounded-xl bg-slate-200/70 p-1 self-start">
+          <button id="view-list-btn" onclick="setGlossaryView('list')" class="px-3 py-1.5 rounded-lg text-xs font-bold bg-white text-slate-900 shadow-sm cursor-pointer">
+            Danh sách Glossary
+          </button>
+          <button id="view-card-btn" onclick="setGlossaryView('card')" class="px-3 py-1.5 rounded-lg text-xs font-bold text-slate-600 hover:text-slate-900 cursor-pointer">
+            Thẻ lật (Flashcard)
+          </button>
+        </div>
+      </div>
+
+      <!-- Glossary List View -->
+      <div id="glossary-list-container" class="grid grid-cols-1 md:grid-cols-2 gap-4"></div>
+
+      <!-- Glossary Flashcard View -->
+      <div id="glossary-card-container" class="hidden max-w-2xl mx-auto">
+        <div class="flex items-center justify-between text-xs font-semibold text-slate-500 mb-3">
+          <span id="fc-counter">Thẻ 1 / 1</span>
+          <button onclick="reshuffleCurrentView()" class="text-indigo-600 hover:underline cursor-pointer">↻ Trộn lại thứ tự</button>
+        </div>
+
+        <div id="flashcard-box" onclick="flipFlashcard()"
+          class="bg-white border border-slate-200 rounded-3xl p-6 sm:p-8 min-h-[320px] card-shadow flex flex-col justify-between cursor-pointer select-none transition-all hover:border-indigo-300">
+          <div class="flex items-center justify-between">
+            <span id="fc-pos-badge" class="px-2.5 py-1 rounded-full text-xs font-bold bg-indigo-50 text-indigo-700">Từ vựng</span>
+            <button type="button" onclick="event.stopPropagation(); speakWord(currentFlashcardWord()?.term || '')"
+              class="inline-flex items-center gap-1.5 px-3 py-1.5 rounded-xl bg-indigo-600 hover:bg-indigo-700 text-white text-xs font-semibold shadow-sm cursor-pointer">
+              🔊 Nghe phát âm
+            </button>
+          </div>
+
+          <div id="fc-front" class="text-center my-6">
+            <h2 id="fc-term" class="text-3xl sm:text-4xl font-extrabold text-slate-900 tracking-tight"></h2>
+            <p id="fc-phonetic" class="mono text-sm text-slate-400 mt-2"></p>
+            <p class="text-xs text-slate-400 mt-6">Nhấn vào thẻ để xem nghĩa, collocations &amp; ví dụ</p>
+          </div>
+
+          <div id="fc-back" class="hidden my-4 space-y-4 text-left">
+            <div>
+              <p class="text-[11px] font-bold uppercase tracking-wider text-indigo-600">Nghĩa tiếng Việt</p>
+              <p id="fc-meaning" class="text-lg font-bold text-slate-900 mt-0.5"></p>
+            </div>
+            <div id="fc-collocations-wrap">
+              <p class="text-[11px] font-bold uppercase tracking-wider text-slate-400">Collocations &amp; Cụm từ</p>
+              <ul id="fc-collocations" class="mt-1 space-y-1 text-sm text-slate-700 list-disc list-inside"></ul>
+            </div>
+            <div id="fc-examples-wrap" class="bg-slate-50 rounded-xl p-3 border border-slate-100">
+              <p class="text-[11px] font-bold uppercase tracking-wider text-slate-400">Ví dụ minh họa</p>
+              <p id="fc-example" class="text-sm italic text-slate-700 mt-1"></p>
+            </div>
+          </div>
+
+          <div class="text-center text-[11px] text-slate-400">Chạm vào thẻ để lật mặt</div>
+        </div>
+
+        <div class="flex items-center justify-between gap-3 mt-4">
+          <button onclick="prevFlashcard()" class="px-4 py-2.5 rounded-xl bg-white border border-slate-200 hover:bg-slate-50 text-sm font-semibold text-slate-700 cursor-pointer">
+            ← Từ trước
+          </button>
+          <button onclick="flipFlashcard()" class="px-4 py-2.5 rounded-xl bg-indigo-50 hover:bg-indigo-100 text-sm font-semibold text-indigo-700 cursor-pointer">
+            Lật thẻ
+          </button>
+          <button onclick="nextFlashcard()" class="px-4 py-2.5 rounded-xl bg-indigo-600 hover:bg-indigo-700 text-sm font-semibold text-white cursor-pointer">
+            Từ tiếp →
+          </button>
+        </div>
+      </div>
+    </section>
+
+    <!-- ==================== TAB 2: SPACED REPETITION (SRS) ==================== -->
+    <section id="tab-srs" class="tab-panel hidden space-y-6">
+      <div class="bg-white rounded-2xl border border-slate-200 p-6 card-shadow max-w-3xl mx-auto">
+        <div class="flex flex-wrap items-center justify-between gap-2 pb-4 border-b border-slate-100">
+          <div>
+            <h2 class="text-lg font-extrabold text-slate-900">Phiên ôn tập lặp lại ngắt quãng (Spaced Repetition)</h2>
+            <p class="text-xs text-slate-500 mt-0.5">Hệ thống tự động xếp lịch ôn lại theo mức độ tự đánh giá của bạn (1 ngày &rarr; 3 ngày &rarr; 7 ngày &rarr; 14 ngày &rarr; 30 ngày).</p>
+          </div>
+          <div class="flex items-center gap-2">
+            <span id="srs-remaining-label" class="px-3 py-1 rounded-full text-xs font-bold bg-indigo-50 text-indigo-700">0 từ cần ôn</span>
+            <button onclick="resetAllSRS()" class="text-xs text-rose-600 hover:underline font-medium cursor-pointer">Đặt lại tiến độ</button>
+          </div>
+        </div>
+
+        <div id="srs-active-area" class="pt-6">
+          <div class="flex items-center justify-between mb-3">
+            <span id="srs-card-level" class="text-xs font-bold px-2.5 py-1 rounded-lg bg-slate-100 text-slate-700">Cấp độ: Mới</span>
+            <button onclick="speakWord(currentSRSWord()?.term || '')"
+              class="inline-flex items-center gap-1.5 px-3 py-1.5 rounded-xl bg-slate-900 hover:bg-slate-800 text-white text-xs font-semibold cursor-pointer">
+              🔊 Phát âm từ
+            </button>
+          </div>
+
+          <div class="text-center py-6 px-4 rounded-2xl bg-slate-50 border border-slate-200/70">
+            <div id="srs-term" class="text-3xl sm:text-4xl font-extrabold text-slate-900"></div>
+            <div id="srs-phonetic" class="mono text-sm text-slate-400 mt-1"></div>
+
+            <div id="srs-answer-box" class="hidden mt-6 pt-5 border-t border-slate-200 text-left space-y-3">
+              <div>
+                <span class="text-xs font-bold uppercase text-indigo-600">Nghĩa:</span>
+                <p id="srs-meaning" class="text-base font-bold text-slate-900"></p>
+              </div>
+              <div id="srs-colloc-box">
+                <span class="text-xs font-bold uppercase text-slate-500">Collocations / Ví dụ:</span>
+                <p id="srs-example" class="text-sm text-slate-700 italic mt-0.5"></p>
+              </div>
+            </div>
+
+            <button id="srs-show-btn" onclick="revealSRSAnswer()"
+              class="mt-6 px-5 py-2.5 rounded-xl bg-indigo-600 hover:bg-indigo-700 text-white text-sm font-semibold shadow-sm cursor-pointer">
+              Hiện đáp án &amp; tự đánh giá
+            </button>
+          </div>
+
+          <!-- Rating Buttons -->
+          <div id="srs-rating-buttons" class="hidden grid grid-cols-2 sm:grid-cols-4 gap-2.5 mt-5">
+            <button onclick="rateSRSCard(1)" class="p-3 rounded-xl border border-rose-200 bg-rose-50 hover:bg-rose-100 text-rose-800 text-left transition cursor-pointer">
+              <div class="text-xs font-extrabold">1. Quên / Khó</div>
+              <div class="text-[11px] opacity-80">Ôn lại sau 10 phút (hôm nay)</div>
+            </button>
+            <button onclick="rateSRSCard(2)" class="p-3 rounded-xl border border-amber-200 bg-amber-50 hover:bg-amber-100 text-amber-800 text-left transition cursor-pointer">
+              <div class="text-xs font-extrabold">2. Hơi khó</div>
+              <div class="text-[11px] opacity-80">Ôn lại sau 1 ngày</div>
+            </button>
+            <button onclick="rateSRSCard(3)" class="p-3 rounded-xl border border-indigo-200 bg-indigo-50 hover:bg-indigo-100 text-indigo-800 text-left transition cursor-pointer">
+              <div class="text-xs font-extrabold">3. Nhớ tốt</div>
+              <div class="text-[11px] opacity-80">Ôn lại sau 3 ngày</div>
+            </button>
+            <button onclick="rateSRSCard(4)" class="p-3 rounded-xl border border-emerald-200 bg-emerald-50 hover:bg-emerald-100 text-emerald-800 text-left transition cursor-pointer">
+              <div class="text-xs font-extrabold">4. Quá dễ</div>
+              <div class="text-[11px] opacity-80">Ôn lại sau 7 ngày</div>
+            </button>
+          </div>
+        </div>
+
+        <div id="srs-done-area" class="hidden text-center py-10 space-y-3">
+          <div class="w-14 h-14 rounded-2xl bg-emerald-100 text-emerald-600 flex items-center justify-center text-2xl mx-auto">🎉</div>
+          <h3 class="text-xl font-extrabold text-slate-900">Bạn đã hoàn thành hết từ đến hạn hôm nay!</h3>
+          <p class="text-sm text-slate-500 max-w-md mx-auto">Quay lại vào ngày mai theo lịch lặp lại ngắt quãng, hoặc luyện thêm một lượt ngẫu nhiên ngay bây giờ.</p>
+          <button onclick="practiceExtraSRS()" class="px-5 py-2.5 rounded-xl bg-indigo-600 hover:bg-indigo-700 text-white text-sm font-semibold cursor-pointer">
+            Luyện thêm 10 từ ngẫu nhiên
+          </button>
+        </div>
+      </div>
+    </section>
+
+    <!-- ==================== TAB 3: QUIZ (TRẮC NGHIỆM) ==================== -->
+    <section id="tab-quiz" class="tab-panel hidden space-y-6">
+      <div class="bg-white rounded-2xl border border-slate-200 p-6 card-shadow max-w-3xl mx-auto">
+        <div class="flex flex-wrap items-center justify-between gap-3 pb-4 border-b border-slate-100">
+          <div>
+            <h2 class="text-lg font-extrabold text-slate-900">Bài tập trắc nghiệm từ vựng</h2>
+            <p class="text-xs text-slate-500">Kiểm tra nghĩa, collocation và cách dùng từ qua câu hỏi tương tác.</p>
+          </div>
+          <div class="flex items-center gap-2">
+            <select id="quiz-length" class="text-xs font-semibold bg-slate-50 border border-slate-200 rounded-lg px-2.5 py-1.5 text-slate-700">
+              <option value="5">5 câu</option>
+              <option value="10" selected>10 câu</option>
+              <option value="15">15 câu</option>
+            </select>
+            <button onclick="startNewQuiz()" class="px-3.5 py-1.5 rounded-lg bg-indigo-600 hover:bg-indigo-700 text-white text-xs font-semibold cursor-pointer">
+              Tạo đề mới
+            </button>
+          </div>
+        </div>
+
+        <div id="quiz-question-area" class="pt-6 space-y-5">
+          <div class="flex items-center justify-between text-xs font-bold text-slate-500">
+            <span id="quiz-progress">Câu 1 / 10</span>
+            <span id="quiz-score" class="text-indigo-600">Điểm: 0</span>
+          </div>
+
+          <div class="bg-slate-50 rounded-2xl p-5 border border-slate-200/70">
+            <div class="flex items-start justify-between gap-3">
+              <p id="quiz-prompt" class="text-base sm:text-lg font-bold text-slate-900 leading-relaxed"></p>
+              <button id="quiz-audio-btn" onclick="speakCurrentQuizWord()" title="Nghe từ"
+                class="shrink-0 px-3 py-1.5 rounded-xl bg-white border border-slate-200 hover:border-indigo-300 text-xs font-semibold text-slate-700 cursor-pointer">
+                🔊 Nghe
+              </button>
+            </div>
+            <p id="quiz-subhint" class="text-xs text-slate-500 mt-2"></p>
+          </div>
+
+          <div id="quiz-options" class="grid grid-cols-1 gap-2.5"></div>
+
+          <div id="quiz-feedback" class="hidden p-4 rounded-xl text-sm border"></div>
+
+          <div class="flex justify-end">
+            <button id="quiz-next-btn" onclick="nextQuizQuestion()" disabled
+              class="px-5 py-2.5 rounded-xl bg-slate-900 disabled:bg-slate-200 disabled:text-slate-400 text-white text-sm font-semibold transition cursor-pointer disabled:cursor-not-allowed">
+              Câu tiếp theo →
+            </button>
+          </div>
+        </div>
+
+        <div id="quiz-summary-area" class="hidden text-center py-8 space-y-4">
+          <div class="text-4xl">🏆</div>
+          <h3 class="text-2xl font-extrabold text-slate-900">Hoàn thành bài trắc nghiệm!</h3>
+          <p id="quiz-final-score" class="text-base font-semibold text-indigo-600"></p>
+          <p id="quiz-final-comment" class="text-sm text-slate-500 max-w-md mx-auto"></p>
+          <button onclick="startNewQuiz()" class="px-5 py-2.5 rounded-xl bg-indigo-600 hover:bg-indigo-700 text-white text-sm font-semibold cursor-pointer">
+            Làm bài mới
+          </button>
+        </div>
+      </div>
+    </section>
+
+    <!-- ==================== TAB 4: SENTENCE BUILDER (ĐẶT CÂU) ==================== -->
+    <section id="tab-sentence" class="tab-panel hidden space-y-6">
+      <div class="bg-white rounded-2xl border border-slate-200 p-6 card-shadow max-w-3xl mx-auto space-y-5">
+        <div class="flex flex-wrap items-center justify-between gap-2 pb-4 border-b border-slate-100">
+          <div>
+            <h2 class="text-lg font-extrabold text-slate-900">Luyện đặt câu chủ động</h2>
+            <p class="text-xs text-slate-500">Tự viết câu tiếng Anh sử dụng từ mục tiêu, nghe phát âm câu của bạn và so sánh với gợi ý.</p>
+          </div>
+          <div class="flex items-center gap-2">
+            <button onclick="prevSentencePrompt()" class="px-3 py-1.5 rounded-lg border border-slate-200 text-xs font-semibold text-slate-700 hover:bg-slate-50 cursor-pointer">← Từ trước</button>
+            <button onclick="nextSentencePrompt()" class="px-3 py-1.5 rounded-lg bg-indigo-600 hover:bg-indigo-700 text-white text-xs font-semibold cursor-pointer">Từ tiếp →</button>
+          </div>
+        </div>
+
+        <div class="p-5 rounded-2xl bg-indigo-50/60 border border-indigo-100 flex flex-wrap items-center justify-between gap-3">
+          <div>
+            <span class="text-[11px] font-bold uppercase tracking-wider text-indigo-600">Từ mục tiêu</span>
+            <div class="flex items-center gap-3 mt-1">
+              <h3 id="sb-word" class="text-2xl font-extrabold text-slate-900"></h3>
+              <button onclick="speakWord(currentSentenceWord()?.term || '')" class="px-2.5 py-1 rounded-lg bg-white border border-indigo-200 text-xs font-semibold text-indigo-700 hover:bg-indigo-50 cursor-pointer">
+                🔊 Đọc từ
+              </button>
+            </div>
+            <p id="sb-meaning" class="text-sm text-slate-600 mt-1"></p>
+            <p id="sb-collocs" class="text-xs text-slate-500 mt-1"></p>
+          </div>
+        </div>
+
+        <div>
+          <label for="sb-textarea" class="block text-xs font-bold uppercase tracking-wider text-slate-500 mb-2">Câu tiếng Anh của bạn</label>
+          <textarea id="sb-textarea" rows="3" placeholder="Viết một câu hoàn chỉnh có chứa từ mục tiêu..."
+            class="w-full p-3.5 rounded-xl border border-slate-200 text-sm focus:outline-none focus:ring-2 focus:ring-indigo-500"></textarea>
+          <div class="flex flex-wrap items-center justify-between gap-2 mt-3">
+            <div class="flex items-center gap-2">
+              <button onclick="checkUserSentence()" class="px-4 py-2 rounded-xl bg-indigo-600 hover:bg-indigo-700 text-white text-xs font-semibold cursor-pointer">
+                Kiểm tra câu
+              </button>
+              <button onclick="speakUserSentence()" class="px-3.5 py-2 rounded-xl bg-white border border-slate-200 hover:bg-slate-50 text-xs font-semibold text-slate-700 cursor-pointer">
+                🔊 Nghe câu bạn viết
+              </button>
+              <button onclick="toggleSampleSentence()" class="px-3.5 py-2 rounded-xl bg-amber-50 border border-amber-200 hover:bg-amber-100 text-xs font-semibold text-amber-800 cursor-pointer">
+                💡 Xem câu mẫu
+              </button>
+            </div>
+            <span id="sb-saved-status" class="text-xs text-emerald-600 font-medium"></span>
+          </div>
+        </div>
+
+        <div id="sb-feedback" class="hidden p-4 rounded-xl border text-sm space-y-1.5"></div>
+
+        <div id="sb-sample-box" class="hidden p-4 rounded-xl bg-slate-50 border border-slate-200 space-y-2">
+          <div class="flex items-center justify-between">
+            <span class="text-xs font-bold uppercase text-slate-500">Câu gợi ý tham khảo</span>
+            <button onclick="speakWord(document.getElementById('sb-sample-text').innerText)" class="text-xs font-semibold text-indigo-600 hover:underline cursor-pointer">
+              🔊 Nghe câu mẫu
+            </button>
+          </div>
+          <p id="sb-sample-text" class="text-sm italic text-slate-800"></p>
+        </div>
+
+        <!-- Saved Sentences History -->
+        <div class="pt-4 border-t border-slate-100">
+          <h4 class="text-xs font-bold uppercase tracking-wider text-slate-400 mb-3">Câu đã lưu gần đây</h4>
+          <div id="sb-history" class="space-y-2 max-h-60 overflow-y-auto"></div>
+        </div>
+      </div>
+    </section>
+
+    <!-- ==================== TAB 5: VOCAB IN CONTEXT ==================== -->
+    <section id="tab-context" class="tab-panel hidden space-y-6">
+      <div class="bg-white rounded-2xl border border-slate-200 p-6 card-shadow max-w-4xl mx-auto space-y-6">
+        <div class="flex flex-wrap items-center justify-between gap-3 pb-4 border-b border-slate-100">
+          <div>
+            <h2 class="text-lg font-extrabold text-slate-900">Đọc từ vựng trong ngữ cảnh (Context)</h2>
+            <p class="text-xs text-slate-500">Nhấn vào các từ vựng được làm nổi bật trong đoạn văn để nghe phát âm và xem nghĩa nhanh.</p>
+          </div>
+          <div class="flex items-center gap-2">
+            <button onclick="prevPassage()" class="px-3 py-1.5 rounded-lg border border-slate-200 text-xs font-semibold text-slate-700 hover:bg-slate-50 cursor-pointer">← Đoạn trước</button>
+            <span id="ctx-counter" class="text-xs font-bold text-slate-500 px-1">1 / 3</span>
+            <button onclick="nextPassage()" class="px-3 py-1.5 rounded-lg bg-indigo-600 hover:bg-indigo-700 text-white text-xs font-semibold cursor-pointer">Đoạn tiếp →</button>
+          </div>
+        </div>
+
+        <div class="grid grid-cols-1 lg:grid-cols-3 gap-6">
+          <div class="lg:col-span-2 space-y-4">
+            <div class="flex items-center justify-between gap-2">
+              <h3 id="ctx-title" class="text-xl font-extrabold text-slate-900"></h3>
+              <button onclick="speakCurrentPassage()" class="shrink-0 inline-flex items-center gap-1.5 px-3 py-1.5 rounded-xl bg-indigo-600 hover:bg-indigo-700 text-white text-xs font-semibold cursor-pointer">
+                🔊 Đọc toàn đoạn
+              </button>
+            </div>
+            <div id="ctx-body" class="text-base leading-8 text-slate-700 bg-slate-50 p-5 rounded-2xl border border-slate-200/70"></div>
+            <div id="ctx-translation" class="hidden p-4 rounded-xl bg-amber-50/70 border border-amber-200/80 text-sm text-slate-700 leading-relaxed"></div>
+            <button onclick="toggleContextTranslation()" class="text-xs font-bold text-indigo-600 hover:underline cursor-pointer">
+              Hiện / Ẩn bản dịch tiếng Việt
+            </button>
+          </div>
+
+          <!-- Inspector Card for Clicked Context Word -->
+          <div class="bg-slate-50 rounded-2xl border border-slate-200/80 p-4 h-fit space-y-3">
+            <p class="text-[11px] font-bold uppercase tracking-wider text-slate-400">Tra nhanh từ trong đoạn</p>
+            <div id="ctx-inspector" class="text-sm text-slate-500">
+              Hãy bấm vào một từ in đậm màu xanh trong đoạn văn để xem nghĩa, phát âm và thêm vào ôn tập.
+            </div>
+          </div>
+        </div>
+      </div>
+    </section>
+
+  </main>
+
+  <footer class="border-t border-slate-200 bg-white py-4 mt-10">
+    <div class="max-w-7xl mx-auto px-4 sm:px-6 lg:px-8 flex flex-col sm:flex-row items-center justify-between gap-2 text-xs text-slate-400">
+      <span>Vocab Studio — Tổng hợp toàn bộ danh sách từ vựng trong tài liệu của bạn.</span>
+      <span>Tiến độ được lưu tự động trên trình duyệt (LocalStorage).</span>
+    </div>
+  </footer>
+
+  <script>
+    // =========================================================================
+    // 1. DATASET (Extracted & structured from the uploaded PDF vocabulary list)
+    // =========================================================================
+    const RAW_VOCAB = [
+      {
+        id: 1, term: "abate", pos: "v.",
+        meaning: "giảm bớt, dịu đi, ngớt dần (đau đớn, mưa, bão...)",
+        collocations: ["something begins to abate", "show no signs of abating"],
+        examples: ["The rainfall finally begins to abate.", "Three hours have gone, the storm shows no signs of abating."]
+      },
+      {
+        id: 2, term: "forthcoming", pos: "adj.",
+        meaning: "sẵn lòng chia sẻ, thẳng thắn; sắp tới",
+        collocations: ["be forthcoming about something", "be forthcoming with information"],
+        examples: ["He is not very forthcoming about his upcoming album.", "The government was not forthcoming with information about the environmental policy."]
+      },
+      {
+        id: 3, term: "infamy", pos: "n.",
+        meaning: "tai tiếng, ô danh, tiếng xấu",
+        collocations: ["go down in infamy", "be remembered for one's infamy", "gain lasting infamy"],
+        examples: ["After everything was revealed, he gained lasting infamy."]
+      },
+      {
+        id: 4, term: "cumulative", pos: "adj.",
+        meaning: "tích lũy, dồn lại theo thời gian",
+        collocations: ["the cumulative effects/impact/consequences of something", "have a cumulative effect", "cumulative exposure to smoke"],
+        examples: ["The cumulative effects of pollution can be detrimental to human health.", "Lack of sleep can have a cumulative effect on mental health."]
+      },
+      {
+        id: 5, term: "inept", pos: "adj.",
+        meaning: "vụng về, kém cỏi, thiếu năng lực",
+        collocations: ["inept handling of something", "inept approach to problem-solving", "inept leadership/management", "socially inept"],
+        examples: ["Inept leadership can undermine employee morale and reduce overall productivity."]
+      },
+      {
+        id: 6, term: "conceivable", pos: "adj.",
+        meaning: "có thể tưởng tượng, có thể hình dung được",
+        collocations: ["it is (entirely) conceivable that...", "every conceivable way", "a conceivable scenario"],
+        examples: ["We should try every conceivable way to tackle this problem."]
+      },
+      {
+        id: 7, term: "conceive", pos: "v.",
+        meaning: "tính đến, hình dung, nghĩ ra ý tưởng",
+        collocations: ["conceive of a possibility", "beyond one's ability to conceive", "difficult to conceive of"],
+        examples: ["We must conceive of the possibility that technology may replace some human occupations."]
+      },
+      {
+        id: 8, term: "contrived", pos: "adj.",
+        meaning: "gượng gạo, giả tạo, sắp đặt thiếu tự nhiên",
+        collocations: ["seem/sound contrived", "a contrived situation/plot/excuse", "deliberately contrived"],
+        examples: ["His explanation seems contrived.", "What happened this morning was deliberately contrived by others."]
+      },
+      {
+        id: 9, term: "resort to", pos: "phr. v.",
+        meaning: "phải dùng đến, viện đến (thường là giải pháp bất đắc dĩ/tiêu cực)",
+        collocations: ["resort to crime/illegal activities/extreme measures", "resort to borrowing money", "as a last resort"],
+        examples: ["As a last resort, I turn to him for help.", "Some individuals may resort to crime when they are unable to meet their basic needs."]
+      },
+      {
+        id: 10, term: "abhor", pos: "v.",
+        meaning: "kinh tởm, căm ghét tột độ",
+        collocations: ["abhor + V-ing", "abhor the idea of + V-ing/N", "abhor someone for something"],
+        examples: ["I abhor all kinds of racial discrimination.", "People abhor exploiting children."]
+      },
+      {
+        id: 11, term: "acclimatize", pos: "v.",
+        meaning: "thích nghi với khí hậu/môi trường mới",
+        collocations: ["acclimatize to a new environment/climate/hot weather/high altitude", "gradually/fully acclimatize"],
+        examples: ["I am gradually acclimatizing to this kind of climate."]
+      },
+      {
+        id: 12, term: "affable", pos: "adj.",
+        meaning: "thân thiện, dễ gần, hòa nhã",
+        collocations: ["an affable man/woman/smile/personality", "be affable towards somebody", "find someone affable"],
+        examples: ["The manager is affable towards all employees."]
+      },
+      {
+        id: 13, term: "acquiesce", pos: "v.",
+        meaning: "miễn cưỡng chấp nhận, ngầm đồng ý, nhượng bộ",
+        collocations: ["acquiesce to pressure/demand", "acquiesce in a decision", "reluctantly acquiesce"],
+        examples: ["The government refused to acquiesce to public pressure."]
+      },
+      {
+        id: 14, term: "admonish", pos: "v.",
+        meaning: "răn đe, khiển trách, nhắc nhở nghiêm khắc",
+        collocations: ["admonish someone for/about something", "sternly/gently/publicly admonish"],
+        examples: ["The teacher admonishes students for cheating."]
+      },
+      {
+        id: 15, term: "aggravate", pos: "v.",
+        meaning: "làm trầm trọng thêm, làm xấu đi",
+        collocations: ["aggravate a problem/situation/existing problems", "aggravate poverty/inequality", "further aggravate"],
+        examples: ["Unemployment and rising cost of living can aggravate poverty in low-income communities."]
+      },
+      {
+        id: 16, term: "amiable", pos: "adj.",
+        meaning: "thân thiện, dễ mến, hòa nhã",
+        collocations: ["maintain an amiable demeanour", "foster amiable relationships", "an amiable working environment"],
+        examples: ["It requires a lot of efforts to foster amiable relationships."]
+      },
+      {
+        id: 17, term: "regime", pos: "n.",
+        meaning: "chế độ (tập luyện, ăn uống, quản lý) hoặc thể chế chính trị",
+        collocations: ["establish a new regime", "maintain a strict dietary/training regime", "political regime"],
+        examples: ["Maintaining a strict dietary regime can help individuals lose weight."]
+      },
+      {
+        id: 18, term: "volatile", pos: "adj.",
+        meaning: "biến động mạnh, thất thường, dễ bùng phát",
+        collocations: ["highly volatile financial markets", "volatile emotions"],
+        examples: ["Learning to manage volatile emotions is essential for maintaining healthy relationships."]
+      },
+      {
+        id: 19, term: "parameter", pos: "n.",
+        meaning: "thông số, tham số; tiêu chí, yếu tố cần xem xét",
+        collocations: ["technical/environmental parameters", "key/multiple parameter"],
+        examples: ["Cost is a key parameter when choosing a suitable product."]
+      },
+      {
+        id: 20, term: "faculty", pos: "n.",
+        meaning: "năng lực tự nhiên, khả năng bẩm sinh; khoa (đại học)",
+        collocations: ["faculty of reasoning/speech"],
+        examples: ["We should include some critical-thinking exercises to nurture students' faculty of reasoning."]
+      },
+      {
+        id: 21, term: "disposition", pos: "n.",
+        meaning: "tính cách; khuynh hướng, thiên hướng; sự bố trí",
+        collocations: ["an optimistic/amiable disposition", "natural disposition towards leadership"],
+        examples: ["People with an optimistic disposition usually cope better with stressful situations."]
+      },
+      {
+        id: 22, term: "dietary", pos: "adj.",
+        meaning: "thuộc về chế độ ăn uống",
+        collocations: ["adopt healthy dietary habits", "maintain a balanced dietary pattern", "poor dietary choices"],
+        examples: ["Poor dietary choices are among the major contributors to obesity."]
+      },
+      {
+        id: 23, term: "alacrity", pos: "n.",
+        meaning: "sự nhanh nhẹn, hăng hái, sẵn sàng",
+        collocations: ["with (surprising) alacrity", "respond/accept/embrace something with alacrity"],
+        examples: ["The students embrace the new way of learning with alacrity."]
+      },
+      {
+        id: 24, term: "appease", pos: "v.",
+        meaning: "xoa dịu, làm nguôi ngoai (cơn giận, sự bất mãn)",
+        collocations: ["appease someone", "appease angry customers", "appease public dissatisfaction"],
+        examples: ["She offers discounts to appease angry customers."]
+      },
+      {
+        id: 25, term: "arcane", pos: "adj.",
+        meaning: "huyền bí, ít người biết; phức tạp, khó hiểu",
+        collocations: ["arcane rituals/religious practices", "arcane knowledge", "arcane rules/regulations"],
+        examples: ["The government should simplify arcane regulations to make public services more accessible."]
+      },
+      {
+        id: 26, term: "arduous", pos: "adj.",
+        meaning: "gian nan, vất vả, đòi hỏi nhiều nỗ lực",
+        collocations: ["an arduous journey/process/undertaking", "arduous conditions"],
+        examples: ["Pursuing higher education while working can be an arduous undertaking."]
+      },
+      { id: 27, term: "assimilate", pos: "v.", meaning: "đồng hóa, tiếp thu và hòa nhập" },
+      { id: 28, term: "brazen", pos: "adj.", meaning: "trơ trẽn, táo tợn, không biết xấu hổ" },
+      { id: 29, term: "brusque", pos: "adj.", meaning: "cộc cằn, sỗ sàng, thẳng thừng" },
+      { id: 30, term: "burgeon", pos: "v.", meaning: "phát triển nhanh chóng, đâm chồi nảy lộc" },
+      { id: 31, term: "cajole", pos: "v.", meaning: "dỗ dành, nịnh nọt, thuyết phục khéo" },
+      { id: 32, term: "callous", pos: "adj.", meaning: "vô cảm, chai sạn, nhẫn tâm" },
+      { id: 33, term: "candour", pos: "n.", meaning: "sự thẳng thắn, bộc trực, chân thành" },
+      { id: 34, term: "circumspect", pos: "adj.", meaning: "thận trọng, cân nhắc kỹ lưỡng" },
+      { id: 35, term: "circumvent", pos: "v.", meaning: "lách luật, né tránh, vượt qua khéo léo" },
+      { id: 36, term: "clandestine", pos: "adj.", meaning: "bí mật, lén lút, ngầm" },
+      { id: 37, term: "coerce", pos: "v.", meaning: "ép buộc, cưỡng bức" },
+      { id: 38, term: "cohesive", pos: "adj.", meaning: "gắn kết, chặt chẽ, thống nhất" },
+      { id: 39, term: "colossal", pos: "adj.", meaning: "khổng lồ, to lớn phi thường" },
+      { id: 40, term: "computerize", pos: "v.", meaning: "tin học hóa, máy tính hóa" },
+      { id: 41, term: "connive", pos: "v.", meaning: "thông đồng, làm ngơ cho sai phạm" },
+      { id: 42, term: "conducive", pos: "adj.", meaning: "có lợi, thúc đẩy, tạo điều kiện thuận lợi" },
+      { id: 43, term: "construe", pos: "v.", meaning: "diễn giải, hiểu theo cách nào đó" },
+      { id: 44, term: "evident", pos: "adj.", meaning: "rõ ràng, hiển nhiên" },
+      { id: 45, term: "cluttered", pos: "adj.", meaning: "bừa bộn, lộn xộn, chật chội" },
+      { id: 46, term: "liable", pos: "adj.", meaning: "có khả năng xảy ra; chịu trách nhiệm pháp lý" },
+      { id: 47, term: "mainstream", pos: "n./adj.", meaning: "xu hướng chính thống, phổ biến rộng rãi" },
+      { id: 48, term: "vary", pos: "v.", meaning: "thay đổi, biến đổi, đa dạng" },
+      { id: 49, term: "address", pos: "v.", meaning: "giải quyết (vấn đề); phát biểu" },
+      { id: 50, term: "acute", pos: "adj.", meaning: "cấp tính, gay gắt, sâu sắc, nhạy bén" },
+      { id: 51, term: "commission", pos: "v./n.", meaning: "ủy thác, đặt làm; ủy ban, hoa hồng" },
+      { id: 52, term: "compute", pos: "v.", meaning: "tính toán, ước lượng bằng số liệu" },
+      { id: 53, term: "concrete", pos: "adj./n.", meaning: "cụ thể, rõ ràng; bê tông" },
+      { id: 54, term: "cosmic", pos: "adj.", meaning: "thuộc về vũ trụ, bao la" },
+      { id: 55, term: "curb", pos: "v./n.", meaning: "kiềm chế, hạn chế; sự kiềm chế" },
+      { id: 56, term: "deficiency", pos: "n.", meaning: "sự thiếu hụt, khiếm khuyết" },
+      { id: 57, term: "demographics", pos: "n.", meaning: "nhân khẩu học, đặc điểm dân số" },
+      { id: 58, term: "derelict", pos: "adj./n.", meaning: "bị bỏ hoang, xuống cấp; công trình bỏ hoang" },
+      { id: 59, term: "deter", pos: "v.", meaning: "ngăn cản, làm nản lòng, răn đe" },
+      { id: 60, term: "deterrent", pos: "n./adj.", meaning: "yếu tố răn đe, ngăn chặn" },
+      { id: 61, term: "detrimental", pos: "adj.", meaning: "có hại, gây tổn hại" },
+      { id: 62, term: "devise", pos: "v.", meaning: "nghĩ ra, vạch ra (kế hoạch, phương pháp)" },
+      { id: 63, term: "equate", pos: "v.", meaning: "đồng nhất, xem như ngang bằng" },
+      { id: 64, term: "patent", pos: "n./adj.", meaning: "bằng sáng chế; hiển nhiên, rõ ràng" },
+      { id: 65, term: "perceive", pos: "v.", meaning: "nhận thức, nhận thấy, cảm nhận" },
+      { id: 66, term: "perk", pos: "n.", meaning: "bổng lộc, phúc lợi thêm" },
+      { id: 67, term: "regulate", pos: "v.", meaning: "điều tiết, điều chỉnh, quy định" },
+      { id: 68, term: "alternate", pos: "v./adj.", meaning: "luân phiên, xen kẽ" },
+      { id: 69, term: "compensate", pos: "v.", meaning: "bù đắp, đền bù" },
+      { id: 70, term: "complacency", pos: "n.", meaning: "sự tự mãn, chủ quan" },
+      { id: 71, term: "complementary", pos: "adj.", meaning: "bổ sung cho nhau, bù trừ" },
+      { id: 72, term: "condemn", pos: "v.", meaning: "lên án, chỉ trích mạnh mẽ, kết án" },
+      { id: 73, term: "deduce", pos: "v.", meaning: "suy luận, rút ra kết luận" },
+      { id: 74, term: "convene", pos: "v.", meaning: "triệu tập, họp lại" },
+      { id: 75, term: "drastic", pos: "adj.", meaning: "quyết liệt, mạnh mẽ, triệt để" },
+      { id: 76, term: "exercise", pos: "v./n.", meaning: "thực thi, áp dụng (quyền lực/sự thận trọng); bài tập" },
+      { id: 77, term: "illustrate", pos: "v.", meaning: "minh họa, làm rõ" },
+      { id: 78, term: "negate", pos: "v.", meaning: "phủ nhận, làm mất tác dụng" },
+      { id: 79, term: "confer", pos: "v.", meaning: "trao tặng (danh hiệu/quyền); bàn bạc" },
+      { id: 80, term: "consecutive", pos: "adj.", meaning: "liên tiếp, kế tiếp nhau" },
+      { id: 81, term: "hence", pos: "adv.", meaning: "vì vậy, do đó; kể từ đây" },
+      { id: 82, term: "impose", pos: "v.", meaning: "áp đặt, đánh (thuế, lệnh cấm)" },
+      { id: 83, term: "onset", pos: "n.", meaning: "sự bắt đầu, khởi phát (thường là điều không mong muốn)" },
+      { id: 84, term: "paradox", pos: "n.", meaning: "nghịch lý" },
+      { id: 85, term: "peninsula", pos: "n.", meaning: "bán đảo" },
+      { id: 86, term: "pressing", pos: "adj.", meaning: "cấp bách, khẩn cấp" },
+      { id: 87, term: "undertake", pos: "v.", meaning: "đảm nhận, cam kết thực hiện" },
+      { id: 88, term: "advantageous", pos: "adj.", meaning: "có lợi, thuận lợi" },
+      { id: 89, term: "adversely", pos: "adv.", meaning: "một cách bất lợi, gây hại" },
+      { id: 90, term: "discrete", pos: "adj.", meaning: "riêng biệt, tách rời, rời rạc" },
+      { id: 91, term: "excavation", pos: "n.", meaning: "sự khai quật, hố đào" },
+      { id: 92, term: "entity", pos: "n.", meaning: "thực thể, tổ chức độc lập" },
+      { id: 93, term: "envisage", pos: "v.", meaning: "hình dung, dự tính, mường tượng" },
+      { id: 94, term: "erratic", pos: "adj.", meaning: "không đều, thất thường, khó đoán" },
+      {
+        id: 95, term: "extravagant", pos: "adj.",
+        meaning: "hoang phí, xa hoa, quá mức",
+        collocations: ["extravagant spending", "extravagant lifestyle", "spend extravagantly"],
+        examples: ["His extravagant lifestyle makes me wonder the way he earns money."]
+      },
+      { id: 96, term: "facade", pos: "n.", meaning: "bề ngoài giả tạo; mặt tiền (tòa nhà)" },
+      { id: 97, term: "far-reaching", pos: "adj.", meaning: "sâu rộng, có tầm ảnh hưởng lớn" },
+      { id: 98, term: "feasible", pos: "adj.", meaning: "khả thi, có thể thực hiện được" },
+      { id: 99, term: "factual", pos: "adj.", meaning: "dựa trên sự thật, thực tế" },
+      { id: 100, term: "fume", pos: "v./n.", meaning: "sục sôi giận dữ; khói/hơi độc" },
+      { id: 101, term: "greedy", pos: "adj.", meaning: "tham lam, hám lợi" },
+      { id: 102, term: "harness", pos: "v.", meaning: "khai thác, tận dụng (nguồn lực, năng lượng)" },
+      { id: 103, term: "haul", pos: "v./n.", meaning: "kéo, vận chuyển; lượng thu được/chuyến chở" },
+      { id: 104, term: "hindsight", pos: "n.", meaning: "sự nhìn nhận lại sau khi sự việc đã xảy ra" },
+      { id: 105, term: "hybrid", pos: "n./adj.", meaning: "lai, hỗn hợp" },
+      { id: 106, term: "hypocrisy", pos: "n.", meaning: "sự đạo đức giả, giả tạo" },
+      { id: 107, term: "icon", pos: "n.", meaning: "biểu tượng" },
+      { id: 108, term: "imaginative", pos: "adj.", meaning: "giàu trí tưởng tượng, sáng tạo" },
+      { id: 109, term: "image", pos: "n.", meaning: "hình ảnh, hình tượng" },
+      { id: 110, term: "immune", pos: "adj.", meaning: "miễn nhiễm, không bị ảnh hưởng" },
+      { id: 111, term: "impoverished", pos: "adj.", meaning: "bần cùng hóa, nghèo khó, kiệt quệ" },
+      { id: 112, term: "incur", pos: "v.", meaning: "gánh chịu (chi phí, nợ nần, chỉ trích)" },
+      { id: 113, term: "indifference", pos: "n.", meaning: "sự thờ ơ, dửng dưng" },
+      { id: 114, term: "liberal", pos: "adj.", meaning: "tự do, phóng khoáng, rộng lượng" },
+      { id: 115, term: "margin", pos: "n.", meaning: "biên độ, mức chênh lệch, lề" },
+      { id: 116, term: "mortgage", pos: "n./v.", meaning: "thế chấp, khoản vay thế chấp" },
+      { id: 117, term: "revenue", pos: "n.", meaning: "doanh thu, nguồn thu" },
+      { id: 118, term: "ratio", pos: "n.", meaning: "tỷ lệ, tỷ số" },
+      { id: 119, term: "prime", pos: "adj.", meaning: "chính, hàng đầu, đỉnh cao" },
+      { id: 120, term: "offensive", pos: "adj./n.", meaning: "xúc phạm, gây khó chịu; cuộc tấn công" },
+      { id: 121, term: "outlook", pos: "n.", meaning: "triển vọng, quan điểm sống" },
+      { id: 122, term: "orient", pos: "v.", meaning: "định hướng, điều chỉnh cho phù hợp" },
+      { id: 123, term: "outer space", pos: "n.", meaning: "ngoài vũ trụ, không gian vũ trụ" },
+      { id: 124, term: "overworked", pos: "adj.", meaning: "làm việc quá sức" },
+      { id: 125, term: "panacea", pos: "n.", meaning: "thuốc chữa bách bệnh, giải pháp vạn năng" },
+      { id: 126, term: "penchant", pos: "n.", meaning: "sở thích đặc biệt, khuynh hướng thích điều gì" },
+      { id: 127, term: "perpetrate", pos: "v.", meaning: "gây ra, phạm (tội ác, sai lầm)" },
+      { id: 128, term: "peruse", pos: "v.", meaning: "đọc kỹ, nghiên cứu kỹ lưỡng" },
+      { id: 129, term: "placid", pos: "adj.", meaning: "êm ả, điềm tĩnh, ôn hòa" },
+      { id: 130, term: "plethora", pos: "n.", meaning: "sự dư thừa, quá nhiều" },
+      { id: 131, term: "pollute", pos: "v.", meaning: "làm ô nhiễm" },
+      { id: 132, term: "polygamy", pos: "n.", meaning: "chế độ đa thê / đa phu" },
+      { id: 133, term: "precipitous", pos: "adj.", meaning: "dốc đứng; vội vàng, đột ngột" },
+      { id: 134, term: "preponderant", pos: "adj.", meaning: "chiếm ưu thế, vượt trội về số lượng/ảnh hưởng" },
+      { id: 135, term: "pressurize", pos: "v.", meaning: "gây sức ép, tạo áp lực" },
+      { id: 136, term: "presumptuous", pos: "adj.", meaning: "quá tự tin, ngạo mạn, vượt quyền" },
+      { id: 137, term: "prodigy", pos: "n.", meaning: "thần đồng, tài năng xuất chúng" },
+      { id: 138, term: "proficient", pos: "adj.", meaning: "thành thạo, giỏi giang" },
+      { id: 139, term: "profusion", pos: "n.", meaning: "sự dồi dào, phong phú, tràn ngập" },
+      { id: 140, term: "substitute", pos: "v./n.", meaning: "thay thế; người/vật thay thế" },
+      { id: 141, term: "transit", pos: "n./v.", meaning: "sự quá cảnh, giao thông công cộng" },
+      { id: 142, term: "aggregate", pos: "adj./n./v.", meaning: "tổng hợp, gộp lại; tổng số" },
+      { id: 143, term: "exert", pos: "v.", meaning: "phát huy, gây ra (ảnh hưởng, nỗ lực, áp lực)" },
+      { id: 144, term: "formerly", pos: "adv.", meaning: "trước đây, từng" },
+      { id: 145, term: "ignorant", pos: "adj.", meaning: "thiếu hiểu biết, không hay biết" },
+      { id: 146, term: "incentive", pos: "n.", meaning: "sự khuyến khích, động lực tài chính/tinh thần" },
+      { id: 147, term: "incidence", pos: "n.", meaning: "tỷ lệ mắc phải, mức độ xảy ra" },
+      { id: 148, term: "index", pos: "n./v.", meaning: "chỉ số, mục lục" },
+      { id: 149, term: "inhibit", pos: "v.", meaning: "kìm hãm, ngăn cản, làm ức chế" },
+      { id: 150, term: "mundane", pos: "adj.", meaning: "tầm thường, đời thường, nhàm chán" },
+      { id: 151, term: "mishap", pos: "n.", meaning: "sự cố nhỏ, rủi ro không nghiêm trọng" },
+      { id: 152, term: "momentous", pos: "adj.", meaning: "quan trọng, trọng đại, có ý nghĩa lịch sử" },
+      { id: 153, term: "nadir", pos: "n.", meaning: "điểm thấp nhất, đáy vực (thất vọng/khủng hoảng)" },
+      { id: 154, term: "nostalgic", pos: "adj.", meaning: "hoài niệm, nhớ về quá khứ" },
+      { id: 155, term: "obtuse", pos: "adj.", meaning: "chậm hiểu, đần độn; (góc) tù" },
+      { id: 156, term: "one-sided", pos: "adj.", meaning: "một chiều, phiến diện" },
+      { id: 157, term: "onus", pos: "n.", meaning: "trách nhiệm, gánh nặng chứng minh/giải quyết" },
+      { id: 158, term: "negative equity", pos: "n.", meaning: "tình trạng giá trị tài sản thấp hơn khoản nợ vay (âm vốn chủ sở hữu)" },
+      { id: 159, term: "niche", pos: "n./adj.", meaning: "ngách (thị trường/chuyên môn phù hợp)" },
+      { id: 160, term: "nominal", pos: "adj.", meaning: "danh nghĩa, nhỏ không đáng kể" },
+      { id: 161, term: "novice", pos: "n.", meaning: "người mới vào nghề, lính mới" },
+      { id: 162, term: "oblivious", pos: "adj.", meaning: "không hay biết, không để ý đến xung quanh" },
+      { id: 163, term: "interval", pos: "n.", meaning: "khoảng thời gian, quãng nghỉ" },
+      { id: 164, term: "precede", pos: "v.", meaning: "đi trước, xảy ra trước" },
+      { id: 165, term: "subsidy", pos: "n.", meaning: "trợ cấp, tiền trợ giá" },
+      { id: 166, term: "treacherous", pos: "adj.", meaning: "nguy hiểm khôn lường, trắc trở; phản bội" },
+      { id: 167, term: "utilise", pos: "v.", meaning: "sử dụng, tận dụng hiệu quả" },
+      { id: 168, term: "adhere", pos: "v.", meaning: "tuân thủ, bám chặt" },
+      { id: 169, term: "comprise", pos: "v.", meaning: "bao gồm, cấu thành từ" },
+      { id: 170, term: "coverage", pos: "n.", meaning: "sự đưa tin truyền thông; phạm vi bao phủ" },
+      { id: 171, term: "empirical", pos: "adj.", meaning: "thực nghiệm, dựa trên quan sát/dữ liệu thực tế" },
+      { id: 172, term: "endeavour", pos: "v./n.", meaning: "nỗ lực, cố gắng" },
+      { id: 173, term: "endorse", pos: "v.", meaning: "chứng thực, ủng hộ công khai" },
+      { id: 174, term: "enduring", pos: "adj.", meaning: "bền bỉ, lâu dài, trường tồn" },
+      { id: 175, term: "endure", pos: "v.", meaning: "chịu đựng, tồn tại lâu dài" },
+      { id: 176, term: "dispose", pos: "v.", meaning: "xử lý, vứt bỏ; làm có khuynh hướng" },
+      { id: 177, term: "disruptive", pos: "adj.", meaning: "phá vỡ hiện trạng, gây gián đoạn/đột phá" },
+      { id: 178, term: "dissertation", pos: "n.", meaning: "luận văn, luận án" },
+      { id: 179, term: "distorted", pos: "adj.", meaning: "bị bóp méo, xuyên tạc" },
+      { id: 180, term: "divert", pos: "v.", meaning: "chuyển hướng, làm sao lãng" },
+      { id: 181, term: "definite", pos: "adj.", meaning: "rõ ràng, dứt khoát, chắc chắn" },
+      { id: 182, term: "finite", pos: "adj.", meaning: "hữu hạn, có giới hạn" },
+      { id: 183, term: "infer", pos: "v.", meaning: "suy diễn, rút ra từ bằng chứng" },
+      { id: 184, term: "innumerate", pos: "adj.", meaning: "mù tính toán, kém về con số/toán học" },
+      { id: 185, term: "insatiable", pos: "adj.", meaning: "không thể thỏa mãn, tham lam vô độ" },
+      { id: 186, term: "insoluble", pos: "adj.", meaning: "không thể giải quyết; không hòa tan" },
+      { id: 187, term: "insomnia", pos: "n.", meaning: "chứng mất ngủ" },
+      { id: 188, term: "intrepid", pos: "adj.", meaning: "gan dạ, dũng cảm, không sợ hãi" },
+      { id: 189, term: "inveterate", pos: "adj.", meaning: "cố hữu, ăn sâu vào máu (thói quen/định kiến)" },
+      { id: 190, term: "irreparable", pos: "adj.", meaning: "không thể bù đắp, không thể sửa chữa" },
+      { id: 191, term: "irreversible", pos: "adj.", meaning: "không thể đảo ngược" },
+      { id: 192, term: "itinerary", pos: "n.", meaning: "lịch trình chuyến đi" },
+      { id: 193, term: "intervene", pos: "v.", meaning: "can thiệp" },
+      { id: 194, term: "intrusion", pos: "n.", meaning: "sự xâm phạm, xen vào bất hợp pháp/không mong muốn" },
+      { id: 195, term: "joint venture", pos: "n.", meaning: "liên doanh, dự án hợp tác chung" },
+      { id: 196, term: "jubilant", pos: "adj.", meaning: "hân hoan, vui mừng tột độ" },
+      { id: 197, term: "labor-saving", pos: "adj.", meaning: "tiết kiệm sức lao động" },
+      { id: 198, term: "life-threatening", pos: "adj.", meaning: "đe dọa tính mạng" },
+      { id: 199, term: "linger", pos: "v.", meaning: "kéo dài dai dẳng, lưu luyến chưa rời" },
+      { id: 200, term: "materialistic", pos: "adj.", meaning: "thực dụng, coi trọng vật chất" },
+      { id: 201, term: "maverick", pos: "n./adj.", meaning: "người độc lập, không theo lối mòn" },
+      { id: 202, term: "meteoric", pos: "adj.", meaning: "nhanh chóng và rực rỡ (như sao băng)" },
+      {
+        id: 203, term: "meticulous", pos: "adj.",
+        meaning: "tỉ mỉ, cẩn trọng đến từng chi tiết",
+        collocations: ["meticulous attention to detail"],
+        examples: ["Designers need meticulous attention to detail."]
+      },
+      { id: 204, term: "labourer", pos: "n.", meaning: "người lao động chân tay" },
+      { id: 205, term: "literate", pos: "adj.", meaning: "biết chữ, có học vấn/hiểu biết trong một lĩnh vực" },
+      {
+        id: 206, term: "lucrative", pos: "adj.",
+        meaning: "sinh lời cao, béo bở",
+        collocations: ["a lucrative business/investment", "find something lucrative", "financially lucrative"],
+        examples: ["Buying properties is a lucrative investment.", "The tourism industry has proved to be highly lucrative for many developing countries."]
+      },
+      { id: 207, term: "propel", pos: "v.", meaning: "thúc đẩy, đẩy tới" },
+      { id: 208, term: "publicize", pos: "v.", meaning: "quảng bá, công bố rộng rãi" },
+      { id: 209, term: "quadrant", pos: "n.", meaning: "góc phần tư" },
+      { id: 210, term: "reap", pos: "v.", meaning: "gặt hái (thành quả, lợi ích)" },
+      { id: 211, term: "rebellious", pos: "adj.", meaning: "nổi loạn, ngang ngạnh, chống đối" },
+      { id: 212, term: "recyclable", pos: "adj.", meaning: "có thể tái chế" },
+      {
+        id: 213, term: "repercussion", pos: "n.",
+        meaning: "hậu quả, hệ quả (thường là không mong muốn hoặc lâu dài)",
+        collocations: ["far-reaching/negative/profound/unintended repercussion"],
+        examples: ["Using machines can increase overall productivity, but it has an unintended repercussion like unemployment."]
+      },
+      { id: 214, term: "revolutionize", pos: "v.", meaning: "cách mạng hóa, làm thay đổi căn bản" },
+      { id: 215, term: "rife", pos: "adj.", meaning: "phổ biến rộng rãi (thường là điều tiêu cực như tệ nạn/tin đồn)" },
+      { id: 216, term: "risk taker", pos: "n.", meaning: "người dám chấp nhận rủi ro" },
+      { id: 217, term: "sabbatical", pos: "n.", meaning: "kỳ nghỉ phép dài hạn (để nghiên cứu/nghỉ ngơi)" },
+      {
+        id: 218, term: "scrupulous", pos: "adj.",
+        meaning: "cẩn thận, tỉ mỉ; liêm khiết, trung thực tuyệt đối",
+        collocations: ["scrupulous examination", "scrupulous honesty"],
+        examples: ["A scrupulous examination of the data is required before publishing."]
+      },
+      {
+        id: 219, term: "sedentary", pos: "adj.",
+        meaning: "ít vận động, ngồi nhiều, lối sống thụ động",
+        collocations: ["sedentary lifestyle"],
+        examples: ["Many people lead a sedentary lifestyle due to the nature of their jobs."]
+      },
+      { id: 220, term: "sensationalist", pos: "adj./n.", meaning: "giật gân, câu khách" },
+      { id: 221, term: "serendipity", pos: "n.", meaning: "sự tình cờ may mắn" },
+      {
+        id: 222, term: "perfunctory", pos: "adj.",
+        meaning: "qua loa, chiếu lệ, làm cho có",
+        collocations: ["perfunctory manner/explanation/apology"],
+        examples: ["He offered me a perfunctory apology, so I couldn't accept."]
+      },
+      { id: 223, term: "shun", pos: "v.", meaning: "xa lánh, tẩy chay, tránh né" },
+      { id: 224, term: "tremendous", pos: "adj.", meaning: "to lớn, phi thường, ghê gớm" },
+      { id: 225, term: "telecommunications", pos: "n.", meaning: "viễn thông" },
+      { id: 226, term: "tantamount", pos: "adj.", meaning: "tương đương với, chẳng khác gì (thường mang nghĩa tiêu cực)" },
+      { id: 227, term: "telecommute", pos: "v.", meaning: "làm việc từ xa qua mạng/viễn thông" },
+      {
+        id: 228, term: "transcend", pos: "v.",
+        meaning: "vượt qua, vượt lên trên (giới hạn, biên giới, lợi ích cá nhân)",
+        collocations: ["transcend geographical/cultural boundaries", "transcend traditional limitations", "transcend individual interest"],
+        examples: ["Education should transcend the mere transmission of knowledge."]
+      },
+      { id: 229, term: "truculent", pos: "adj.", meaning: "hung hăng, hiếu chiến, cộc cằn" },
+      { id: 230, term: "ultra", pos: "prefix/adj.", meaning: "cực đoan, siêu, vượt mức" },
+      { id: 231, term: "unintentional", pos: "adj.", meaning: "vô tình, không cố ý" },
+      { id: 232, term: "unleaded", pos: "adj.", meaning: "không pha chì (xăng)" },
+      { id: 233, term: "unmanned", pos: "adj.", meaning: "không người lái, tự động" },
+      { id: 234, term: "unspoiled", pos: "adj.", meaning: "hoang sơ, nguyên vẹn, chưa bị tàn phá" },
+      { id: 235, term: "upbeat", pos: "adj.", meaning: "lạc quan, vui vẻ, tích cực" },
+      { id: 236, term: "uphold", pos: "v.", meaning: "duy trì, bảo vệ (nguyên tắc, công lý, phán quyết)" },
+      { id: 237, term: "upmarket", pos: "adj.", meaning: "cao cấp, hướng tới phân khúc khách hàng giàu có" },
+      { id: 238, term: "upsurge", pos: "n.", meaning: "sự gia tăng đột biến, làn sóng tăng mạnh" },
+      { id: 239, term: "urbanized", pos: "adj.", meaning: "đô thị hóa" },
+      { id: 240, term: "varsity", pos: "n./adj.", meaning: "đại học, đội tuyển đại học" },
+      { id: 241, term: "vehement", pos: "adj.", meaning: "mãnh liệt, kịch liệt, sôi nổi" },
+      { id: 242, term: "venal", pos: "adj.", meaning: "dễ bị mua chuộc, tham nhũng, vụ lợi" },
+      { id: 243, term: "venerable", pos: "adj.", meaning: "đáng kính, cổ kính tôn nghiêm" },
+      {
+        id: 244, term: "vindicate", pos: "v.",
+        meaning: "chứng minh là đúng; minh oan, khôi phục thanh danh",
+        collocations: ["vindicate a theory/hypothesis/decision", "vindicate someone's reputation", "be fully vindicated"],
+        examples: ["The investigation helped vindicate his reputation.", "He was fully vindicated after the evidence proved he was not the murderer."]
+      },
+      { id: 245, term: "somewhat", pos: "adv.", meaning: "phần nào, đôi chút, hơi" },
+      { id: 246, term: "simulate", pos: "v.", meaning: "mô phỏng, giả lập" },
+      { id: 247, term: "skyscraper", pos: "n.", meaning: "tòa nhà chọc trời" },
+      { id: 248, term: "sprawl", pos: "v./n.", meaning: "trải rộng lộn xộn; sự đô thị hóa lan tràn" },
+      { id: 249, term: "stagnant", pos: "adj.", meaning: "trì trệ, đình đốn, ứ đọng" },
+      { id: 250, term: "staid", pos: "adj.", meaning: "nghiêm túc thái quá, bảo thủ, kém sôi nổi" },
+      { id: 251, term: "stifle", pos: "v.", meaning: "kìm nén, bóp nghẹt, dập tắt" },
+      { id: 252, term: "streamline", pos: "v.", meaning: "tinh giản, hợp lý hóa quy trình" },
+      { id: 253, term: "stutter", pos: "v./n.", meaning: "nói lắp, nói cà lăm" },
+      { id: 254, term: "succumb", pos: "v.", meaning: "khuất phục, đầu hàng, chết vì (bệnh/áp lực)" },
+      {
+        id: 255, term: "superfluous", pos: "adj.",
+        meaning: "thừa thãi, không cần thiết",
+        collocations: ["superfluous information/expenditure/administrative procedures"],
+        examples: ["We shouldn't include superfluous information in our speech.", "I should remove some superfluous expenditure in my daily spending."]
+      },
+      { id: 256, term: "surpass", pos: "v.", meaning: "vượt qua, vượt trội hơn" },
+      { id: 257, term: "sycophant", pos: "n.", meaning: "kẻ nịnh hót, xu nịnh" },
+      { id: 258, term: "publication", pos: "n.", meaning: "ấn phẩm, sự xuất bản" },
+      { id: 259, term: "transmit", pos: "v.", meaning: "truyền tải, truyền phát, lây truyền" },
+      { id: 260, term: "ultimate", pos: "adj.", meaning: "cuối cùng, tối hậu, đỉnh cao" },
+      { id: 261, term: "append", pos: "v.", meaning: "đính kèm, thêm vào cuối" },
+      {
+        id: 262, term: "arbitrary", pos: "adj.",
+        meaning: "tùy tiện, độc đoán, không theo nguyên tắc rõ ràng",
+        collocations: ["arbitrary choices/rules"],
+        examples: ["The school introduced arbitrary rules that restricted students' freedom."]
+      },
+      { id: 263, term: "automate", pos: "v.", meaning: "tự động hóa" },
+      { id: 264, term: "contradict", pos: "v.", meaning: "mâu thuẫn, bác bỏ" },
+      { id: 265, term: "complement", pos: "v./n.", meaning: "bổ sung, làm hoàn chỉnh cho nhau" },
+      { id: 266, term: "commodities", pos: "n.", meaning: "hàng hóa (đặc biệt là nguyên liệu thô, nông sản)" },
+      { id: 267, term: "denote", pos: "v.", meaning: "biểu thị, biểu thị ý nghĩa" },
+      {
+        id: 268, term: "deride", pos: "v.",
+        meaning: "chế nhạo, chế giễu, cười nhạo",
+        collocations: ["deride someone for something"],
+        examples: ["Students should not deride their classmates for making mistakes."]
+      },
+      { id: 269, term: "despot", pos: "n.", meaning: "bạo chúa, nhà cầm quyền chuyên chế" },
+      { id: 270, term: "distracting", pos: "adj.", meaning: "gây xao nhãng, làm mất tập trung" },
+      {
+        id: 271, term: "downsize", pos: "v.",
+        meaning: "cắt giảm nhân sự, thu nhỏ quy mô kinh doanh hoặc nhà ở",
+        collocations: ["downsize workforce", "downsize the business", "downsize one's home"],
+        examples: ["The company finally decided to downsize its workforce, leaving thousands unemployed."]
+      },
+      {
+        id: 272, term: "dumbfounded", pos: "adj.",
+        meaning: "sửng sốt, bàng hoàng, chết lặng (= flabbergasted)",
+        collocations: ["be dumbfounded to find out...", "left speechless and dumbfounded"],
+        examples: ["Many people are dumbfounded to find out the things that AI can do."]
+      },
+      { id: 273, term: "elated", pos: "adj.", meaning: "phấn khởi, vui sướng tột độ" },
+      {
+        id: 274, term: "eloquent", pos: "adj.",
+        meaning: "hùng hồn, lưu loát, giàu sức thuyết phục",
+        collocations: ["eloquent speaker/speech/argument"],
+        examples: ["His eloquent speech about his homeland is very emotional."]
+      },
+      { id: 275, term: "elucidate", pos: "v.", meaning: "làm sáng tỏ, giải thích rõ ràng" },
+      { id: 276, term: "enmity", pos: "n.", meaning: "mối hiềm khích, sự thù địch" },
+      { id: 277, term: "entitle", pos: "v.", meaning: "cho phép, trao quyền; đặt tên cho" },
+      { id: 278, term: "equable", pos: "adj.", meaning: "ôn hòa, bình tĩnh, đều đặn" },
+      { id: 279, term: "detect", pos: "v.", meaning: "phát hiện, dò ra" },
+      { id: 280, term: "deviate", pos: "v.", meaning: "chệch hướng, đi chệch khỏi chuẩn mực" },
+      { id: 281, term: "eventual", pos: "adj.", meaning: "cuối cùng, rốt cuộc sẽ xảy ra" },
+      { id: 282, term: "forsake", pos: "v.", meaning: "từ bỏ, ruồng bỏ, rời bỏ" },
+      { id: 283, term: "fractious", pos: "adj.", meaning: "dễ cáu kỉnh, hay gây gổ, khó bảo" },
+      { id: 284, term: "fruitless", pos: "adj.", meaning: "vô ích, không đem lại kết quả" },
+      { id: 285, term: "furtive", pos: "adj.", meaning: "lén lút, vụng trộm, giấu giếm" },
+      { id: 286, term: "futuristic", pos: "adj.", meaning: "mang phong cách tương lai, hiện đại tân tiến" },
+      { id: 287, term: "genetically modified", pos: "adj.", meaning: "biến đổi gen" },
+      { id: 288, term: "gluttony", pos: "n.", meaning: "sự háu ăn, ăn uống vô độ" },
+      { id: 289, term: "gratuitous", pos: "adj.", meaning: "vô cớ, không cần thiết, tự phát quá mức" },
+      { id: 290, term: "grilling", pos: "n./adj.", meaning: "sự thẩm vấn/chất vấn gắt gao; nướng" },
+      { id: 291, term: "gruelling", pos: "adj.", meaning: "khốc liệt, kiệt sức, gian khổ" },
+      { id: 292, term: "haughty", pos: "adj.", meaning: "kiêu căng, ngạo mạn, hợm hĩnh" },
+      { id: 293, term: "headway", pos: "n.", meaning: "sự tiến bộ, bước tiến" },
+      { id: 294, term: "human nature", pos: "n.", meaning: "bản chất con người" },
+      { id: 295, term: "hygienic", pos: "adj.", meaning: "hợp vệ sinh, sạch sẽ" },
+      { id: 296, term: "impart", pos: "v.", meaning: "truyền đạt (kiến thức, thông tin, phẩm chất)" },
+      {
+        id: 297, term: "impartial", pos: "adj.",
+        meaning: "công bằng, khách quan, không thiên vị",
+        collocations: ["impartial judgement", "impartial assessment"],
+        examples: ["The judge was expected to exercise impartial judgement."]
+      },
+      { id: 298, term: "impeccable", pos: "adj.", meaning: "hoàn hảo không tì vết, chuẩn mực" },
+      { id: 299, term: "impediment", pos: "n.", meaning: "trở ngại, vật cản" },
+      { id: 300, term: "impertinent", pos: "adj.", meaning: "xấc xược, hỗn láo, không thích hợp" },
+      { id: 301, term: "implacable", pos: "adj.", meaning: "không thể làm nguôi ngoai, kiên quyết không nhượng bộ" },
+      { id: 302, term: "impracticable", pos: "adj.", meaning: "không thực tế, khó áp dụng trên thực tế" },
+      { id: 303, term: "imprison", pos: "v.", meaning: "bỏ tù, giam cầm" },
+      { id: 304, term: "impudent", pos: "adj.", meaning: "trơ tráo, xấc xược, thiếu tôn trọng" },
+      { id: 305, term: "incisive", pos: "adj.", meaning: "sắc sảo, sắc bén, đi thẳng vào vấn đề" },
+      {
+        id: 306, term: "induce", pos: "v.",
+        meaning: "gây ra, dẫn đến; thuyết phục hoặc kích thích xảy ra",
+        collocations: ["induce health problems", "induce addictive behaviours"],
+        examples: ["A sedentary lifestyle may induce many health problems."]
+      },
+      { id: 307, term: "indulge", pos: "v.", meaning: "chiều chuộng (bản thân/người khác), đắm chìm" },
+      { id: 308, term: "infancy", pos: "n.", meaning: "thời kỳ sơ khai, giai đoạn đầu; thời thơ ấu" },
+      { id: 309, term: "infectious", pos: "adj.", meaning: "dễ lây nhiễm; dễ lan tỏa (nụ cười/sự hào hứng)" },
+      { id: 310, term: "informative", pos: "adj.", meaning: "cung cấp nhiều thông tin hữu ích" },
+      { id: 311, term: "influential", pos: "adj.", meaning: "có tầm ảnh hưởng lớn" },
+      { id: 312, term: "practitioner", pos: "n.", meaning: "người hành nghề (y khoa, luật, chuyên môn)" },
+      { id: 313, term: "predominant", pos: "adj.", meaning: "chiếm ưu thế, nổi bật nhất" },
+      { id: 314, term: "prerequisite", pos: "n./adj.", meaning: "điều kiện tiên quyết" },
+      { id: 315, term: "prototype", pos: "n.", meaning: "nguyên mẫu, bản thử nghiệm đầu tiên" },
+      { id: 316, term: "questionable", pos: "adj.", meaning: "đáng ngờ, không chắc chắn về tính đúng đắn/đạo đức" },
+      { id: 317, term: "rash", pos: "adj./n.", meaning: "bốc đồng, hấp tấp; phát ban" },
+      { id: 318, term: "offset", pos: "v.", meaning: "bù đắp, làm cân bằng lại" },
+      { id: 319, term: "recreational", pos: "adj.", meaning: "thuộc về giải trí, tiêu khiển" },
+      { id: 320, term: "radical", pos: "adj./n.", meaning: "triệt để, căn bản; cấp tiến" },
+      { id: 321, term: "render", pos: "v.", meaning: "làm cho trở nên (như thế nào); cung cấp" },
+      { id: 322, term: "resent", pos: "v.", meaning: "bực tức, oán giận, không bằng lòng" },
+      { id: 323, term: "salient", pos: "adj.", meaning: "nổi bật, đáng chú ý nhất" },
+      {
+        id: 324, term: "pernicious", pos: "adj.",
+        meaning: "nguy hại ngấm ngầm, độc hại lâu dài",
+        collocations: ["pernicious effects of..."],
+        examples: ["The pernicious effects of deforestation extend far beyond the immediate loss of wildlife habitats."]
+      },
+      { id: 325, term: "setback", pos: "n.", meaning: "bước lùi, trở ngại, thất bại tạm thời" },
+      { id: 326, term: "slump", pos: "v./n.", meaning: "sụt giảm mạnh; sự suy thoái/sụt giảm" },
+      { id: 327, term: "speculate", pos: "v.", meaning: "suy đoán, phỏng đoán; đầu cơ" },
+      { id: 328, term: "staggering", pos: "adj.", meaning: "choáng ngợp, đáng kinh ngạc (về quy mô/con số)" },
+      { id: 329, term: "stimulating", pos: "adj.", meaning: "kích thích tư duy, thú vị, đầy hứng khởi" },
+      { id: 330, term: "superficial", pos: "adj.", meaning: "hời hợt, nông cạn, bề mặt" },
+      { id: 331, term: "susceptible", pos: "adj.", meaning: "dễ bị tổn thương, dễ bị ảnh hưởng bởi" },
+      { id: 332, term: "taxing", pos: "adj.", meaning: "đòi hỏi nhiều sức lực/tâm trí, vất vả" },
+      { id: 333, term: "tertiary", pos: "adj.", meaning: "bậc ba, bậc đại học/cao đẳng" },
+      { id: 334, term: "terminate", pos: "v.", meaning: "chấm dứt, kết thúc" },
+      { id: 335, term: "arid", pos: "adj.", meaning: "khô cằn, khô hạn; khô khan" },
+      { id: 336, term: "arithmetic", pos: "n./adj.", meaning: "số học" },
+      { id: 337, term: "bland", pos: "adj.", meaning: "nhạt nhẽo, thiếu hương vị hoặc sự thú vị" },
+      { id: 338, term: "brisk", pos: "adj.", meaning: "nhanh nhẹn, hoạt bát, se lạnh sảng khoái" },
+      { id: 339, term: "coincide", pos: "v.", meaning: "trùng hợp, xảy ra đồng thời; khớp nhau" },
+      { id: 340, term: "bulk", pos: "n.", meaning: "phần lớn, khối lượng lớn" },
+      { id: 341, term: "commence", pos: "v.", meaning: "bắt đầu, khởi sự (trang trọng)" },
+      { id: 342, term: "compatible", pos: "adj.", meaning: "tương thích, hòa hợp" },
+      { id: 343, term: "concurrent", pos: "adj.", meaning: "đồng thời, diễn ra cùng lúc" },
+      { id: 344, term: "confine", pos: "v.", meaning: "giới hạn, giam hãm, khu trú" },
+      { id: 345, term: "converse", pos: "v./n./adj.", meaning: "trò chuyện; điều ngược lại" },
+      { id: 346, term: "cosmopolitan", pos: "adj./n.", meaning: "mang tính quốc tế, đa văn hóa" },
+      { id: 347, term: "counteract", pos: "v.", meaning: "chống lại, làm giảm tác dụng" },
+      { id: 348, term: "crux", pos: "n.", meaning: "mấu chốt, điểm cốt lõi của vấn đề" },
+      { id: 349, term: "current affairs", pos: "n.", meaning: "thời sự, các vấn đề hiện tại" },
+      { id: 350, term: "debase", pos: "v.", meaning: "làm giảm giá trị, làm tha hóa" },
+      { id: 351, term: "decry", pos: "v.", meaning: "chỉ trích công khai, lên án" },
+      { id: 352, term: "deferential", pos: "adj.", meaning: "kính trọng, lễ phép, nhún nhường" },
+      { id: 353, term: "demeanour", pos: "n.", meaning: "phong thái, cử chỉ, thái độ ứng xử" },
+      { id: 354, term: "demure", pos: "adj.", meaning: "dè dặt, kín đáo, thùy mị" },
+      { id: 355, term: "discrepancy", pos: "n.", meaning: "sự chênh lệch, không khớp nhau (số liệu/lời khai)" },
+      {
+        id: 356, term: "disparity", pos: "n.",
+        meaning: "sự chênh lệch, bất bình đẳng lớn",
+        collocations: ["income disparity"],
+        examples: ["Income disparity has become an increasingly pressing issue in many developing countries."]
+      },
+      { id: 357, term: "disposable", pos: "adj.", meaning: "dùng một lần; có thể tự do chi tiêu (thu nhập khả dụng)" },
+      { id: 358, term: "distort", pos: "v.", meaning: "bóp méo, làm biến dạng" },
+      { id: 359, term: "erode", pos: "v.", meaning: "xói mòn, làm suy yếu dần" },
+      { id: 360, term: "erudite", pos: "adj.", meaning: "uyên bác, thông thái, sâu rộng" },
+      { id: 361, term: "escalate", pos: "v.", meaning: "leo thang, tăng mạnh" },
+      { id: 362, term: "exacerbate", pos: "v.", meaning: "làm trầm trọng thêm (tình hình xấu)" },
+      { id: 363, term: "embrace", pos: "v./n.", meaning: "đón nhận, ôm lấy; cái ôm" },
+      { id: 364, term: "exhort", pos: "v.", meaning: "thúc giục, khuyên bảo mạnh mẽ" },
+      {
+        id: 365, term: "exorbitant", pos: "adj.",
+        meaning: "đắt đỏ cắt cổ; vô lý, quá mức",
+        collocations: ["exorbitant cost of living", "exorbitant demands"],
+        examples: ["The exorbitant cost of living has made it difficult for young people to think about having children."]
+      },
+      {
+        id: 366, term: "extol", pos: "v.",
+        meaning: "ca ngợi, tán dương",
+        collocations: ["extol someone for...", "extol the virtues/benefits of..."],
+        examples: ["People usually extol the virtues of lifelong learning."]
+      },
+      {
+        id: 367, term: "eyesore", pos: "n.",
+        meaning: "vật chướng mắt, mất thẩm mỹ",
+        collocations: ["become an eyesore", "be considered an eyesore"],
+        examples: ["The way he was dressing himself was considered an eyesore."]
+      },
+      {
+        id: 368, term: "fabricate", pos: "v.",
+        meaning: "bịa đặt, dựng chuyện; làm giả hồ sơ/tài liệu",
+        collocations: ["fabricate a story", "fabricate financial records"],
+        examples: ["He is trying to fabricate a story to cover up why he came home late."]
+      },
+      {
+        id: 369, term: "flabbergasted", pos: "adj.",
+        meaning: "vô cùng kinh ngạc, sững sờ",
+        collocations: ["absolutely flabbergasted", "leave someone flabbergasted"],
+        examples: ["I was absolutely flabbergasted when I found out he cheated on me."]
+      },
+      { id: 370, term: "integral", pos: "adj.", meaning: "thiết yếu, không thể thiếu, trọn vẹn" },
+      { id: 371, term: "intake", pos: "n.", meaning: "lượng nạp vào (thức ăn, nước, học viên mới)" },
+      { id: 372, term: "inherent", pos: "adj.", meaning: "vốn có, cố hữu" },
+      { id: 373, term: "preliminary", pos: "adj./n.", meaning: "sơ bộ, bước đầu; vòng sơ loại" },
+      { id: 374, term: "refine", pos: "v.", meaning: "tinh chỉnh, trau chuốt, lọc" },
+      { id: 375, term: "restrain", pos: "v.", meaning: "kiềm chế, kìm giữ" },
+      { id: 376, term: "rigid", pos: "adj.", meaning: "cứng nhắc, khắt khe, khó thay đổi" },
+      { id: 377, term: "sphere", pos: "n.", meaning: "lĩnh vực, phạm vi; hình cầu" },
+      { id: 378, term: "supplement", pos: "v./n.", meaning: "bổ sung; thực phẩm/tài liệu bổ sung" },
+      { id: 379, term: "protocol", pos: "n.", meaning: "nghi thức, quy trình chuẩn" },
+      { id: 380, term: "suspend", pos: "v.", meaning: "đình chỉ, tạm dừng; treo" },
+      { id: 381, term: "trivial", pos: "adj.", meaning: "vặt vãnh, không đáng kể" },
+      {
+        id: 382, term: "ubiquitous", pos: "adj.",
+        meaning: "hiện diện ở khắp mọi nơi, phổ biến rộng khắp",
+        collocations: ["ubiquitous presence of smartphones/supermarkets"],
+        examples: ["The ubiquitous presence of smartphones has made instant communication possible."]
+      },
+      { id: 383, term: "vociferous", pos: "adj.", meaning: "ồn ào, lớn tiếng phản đối/yêu cầu" },
+      { id: 384, term: "weightless", pos: "adj.", meaning: "không trọng lượng, nhẹ bẫng" },
+      { id: 385, term: "white collar", pos: "adj.", meaning: "thuộc về lao động văn phòng, trí óc" },
+      { id: 386, term: "win win", pos: "adj./n.", meaning: "cùng có lợi cho các bên" },
+      { id: 387, term: "withhold", pos: "v.", meaning: "giữ lại, không tiết lộ, từ chối cấp" },
+      { id: 388, term: "zenith", pos: "n.", meaning: "đỉnh cao, thời kỳ cực thịnh" },
+      { id: 389, term: "adjacent", pos: "adj.", meaning: "kề bên, liền kề" },
+      { id: 390, term: "albeit", pos: "conj.", meaning: "tuy nhiên, mặc dù (thường nối cụm tính từ/trạng từ)" },
+      { id: 391, term: "whereby", pos: "adv./conj.", meaning: "nhờ đó, qua đó (cơ chế/phương thức)" },
+      { id: 392, term: "compile", pos: "v.", meaning: "biên soạn, tổng hợp" },
+      { id: 393, term: "depress", pos: "v.", meaning: "làm chán nản; làm giảm sút (giá cả, hoạt động)" },
+      { id: 394, term: "unprecedented", pos: "adj.", meaning: "chưa từng có tiền lệ" },
+      { id: 395, term: "unskilled", pos: "adj.", meaning: "không đòi hỏi kỹ năng chuyên môn cao, phổ thông" },
+      { id: 396, term: "versatile", pos: "adj.", meaning: "đa năng, linh hoạt, nhiều tài" },
+      { id: 397, term: "sophisticated", pos: "adj.", meaning: "tinh vi, phức tạp, sành điệu/am hiểu" },
+      { id: 398, term: "speculation", pos: "n.", meaning: "sự suy đoán; sự đầu cơ" },
+      { id: 399, term: "steep", pos: "adj.", meaning: "dốc; tăng/giảm mạnh; quá cao" },
+      { id: 400, term: "stimulus", pos: "n.", meaning: "tác nhân kích thích, cú hích" },
+      { id: 401, term: "strain", pos: "n./v.", meaning: "sự căng thẳng, quá tải; làm căng thẳng" },
+      { id: 402, term: "successive", pos: "adj.", meaning: "liên tiếp nhau theo thứ tự" },
+      { id: 403, term: "reluctance", pos: "n.", meaning: "sự miễn cưỡng, do dự" },
+      {
+        id: 404, term: "pose", pos: "v./n.",
+        meaning: "tạo ra (thách thức/mối đe dọa); giả vờ; dáng vẻ bề ngoài",
+        collocations: ["pose as experts", "merely a pose"],
+        examples: ["He poses as an expert even though he doesn't know anything about it.", "Her confidence is merely a pose."]
+      },
+      { id: 405, term: "pervasive", pos: "adj.", meaning: "lan tỏa khắp nơi, thấm sâu vào mọi mặt" },
+      { id: 406, term: "pitfall", pos: "n.", meaning: "cạm bẫy, rủi ro tiềm ẩn" },
+      { id: 407, term: "plateau", pos: "n./v.", meaning: "giai đoạn chững lại, bình ổn sau khi tăng" },
+      { id: 408, term: "plunge", pos: "v./n.", meaning: "lao xuống, giảm mạnh; sự sụt giảm mạnh" },
+      {
+        id: 409, term: "pointless", pos: "adj.",
+        meaning: "vô ích, vô nghĩa",
+        collocations: ["a pointless waste of time", "it is pointless to V"],
+        examples: ["It is quite pointless to argue with him."]
+      },
+      {
+        id: 410, term: "notwithstanding", pos: "prep./conj.",
+        meaning: "bất chấp, mặc dù",
+        collocations: ["notwithstanding + N/NP"],
+        examples: ["Notwithstanding the high cost of university education, many students still consider obtaining a degree worthwhile."]
+      },
+      {
+        id: 411, term: "invoke", pos: "v.",
+        meaning: "trích dẫn/viện dẫn (luật, quy định); khơi gợi (ký ức, sự đồng cảm)",
+        collocations: ["invoke rights/laws/regulations", "invoke memories/sympathy/a sense of responsibility"],
+        examples: ["The scene successfully invoked audiences' childhood memories."]
+      },
+      {
+        id: 412, term: "intrinsic", pos: "adj.",
+        meaning: "vốn có, nội tại, thuộc về bản chất",
+        collocations: ["intrinsic human characteristic", "intrinsic motivation", "intrinsic value/worth"],
+        examples: ["Education has intrinsic value beyond its economic benefits."]
+      },
+      {
+        id: 413, term: "integrity", pos: "n.",
+        meaning: "tính liêm chính, chính trực; sự toàn vẹn",
+        collocations: ["personal/academic/moral integrity"],
+        examples: ["A good leader should possess integrity and always act in the best interests of the public."]
+      },
+      {
+        id: 414, term: "incline", pos: "v.",
+        meaning: "có khuynh hướng, có xu hướng",
+        collocations: ["feel inclined to do something", "be inclined towards something", "be inclined to believe that..."],
+        examples: ["Individuals are increasingly inclined to purchase products online rather than visit physical stores."]
+      },
+      {
+        id: 415, term: "indolent", pos: "adj.",
+        meaning: "lười biếng, biếng nhác, uể oải",
+        collocations: ["an indolent attitude towards work", "an increasingly indolent lifestyle", "become indolent"],
+        examples: ["An indolent attitude towards work may undermine employees' professional development."]
+      },
+      {
+        id: 416, term: "industrious", pos: "adj.",
+        meaning: "siêng năng, chăm chỉ, cần cù",
+        collocations: ["an industrious student/person/workforce", "industrious by nature"],
+        examples: ["I have always been industrious by nature, so I always do homework."]
+      },
+      {
+        id: 417, term: "inexorable", pos: "adj.",
+        meaning: "không thể ngăn cản, không thể đảo ngược",
+        collocations: ["inexorable rise/advance of...", "inexorable march of time"],
+        examples: ["The inexorable advance of technology may replace some human occupations."]
+      },
+      {
+        id: 418, term: "obdurate", pos: "adj.",
+        meaning: "cứng đầu, ngoan cố, chai lì về cảm xúc",
+        collocations: ["remain obdurate despite...", "an obdurate attitude/refusal", "emotionally obdurate"],
+        examples: ["Her obdurate refusal to compromise prolonged the conflict."]
+      }
+    ];
+
+    // Context Passages built around words from the dataset
+    const CONTEXT_PASSAGES = [
+      {
+        title: "Công nghệ, nhịp sống hiện đại và sức khỏe cộng đồng",
+        words: ["ubiquitous", "sedentary", "cumulative", "induce", "curb", "feasible"],
+        text: "The ubiquitous presence of digital devices has reshaped how people work and socialize every day. While remote tools are often feasible and convenient, prolonged screen time encourages a sedentary lifestyle. Over months and years, the cumulative effects of sitting too long and sleeping poorly can induce chronic fatigue and health problems. Experts argue that simple habits—such as short hourly walks—help curb these risks before they become irreversible.",
+        translation: "Sự hiện diện khắp mọi nơi của các thiết bị kỹ thuật số đã định hình lại cách con người làm việc và giao lưu mỗi ngày. Dù các công cụ từ xa thường khả thi và tiện lợi, việc nhìn màn hình kéo dài lại khuyến khích lối sống ít vận động. Qua nhiều tháng và nhiều năm, tác động tích lũy của việc ngồi quá lâu và thiếu ngủ có thể gây ra mệt mỏi mãn tính cùng các vấn đề sức khỏe. Các chuyên gia cho rằng những thói quen đơn giản—như đi bộ ngắn mỗi giờ—giúp kiềm chế các rủi ro này trước khi chúng trở nên không thể đảo ngược."
+      },
+      {
+        title: "Chính sách công, bất bình đẳng và trách nhiệm lãnh đạo",
+        words: ["disparity", "exacerbate", "acquiesce", "impartial", "vindicate", "repercussion"],
+        text: "Widening income disparity remains a pressing challenge in rapidly urbanizing economies. When policies are designed without impartial analysis, they may exacerbate existing inequalities instead of resolving them. Although citizens sometimes acquiesce to difficult measures in the short term, opaque decisions can trigger serious social repercussion. Transparent reforms that withstand public scrutiny ultimately vindicate leaders who prioritize long-term fairness.",
+        translation: "Khoảng cách chênh lệch thu nhập ngày càng nới rộng vẫn là thách thức cấp bách ở các nền kinh tế đô thị hóa nhanh. Khi chính sách được xây dựng thiếu sự phân tích khách quan, chúng có thể làm trầm trọng thêm bất bình đẳng hiện hữu thay vì giải quyết chúng. Dù người dân đôi khi miễn cưỡng chấp nhận các biện pháp khó khăn trong ngắn hạn, những quyết định thiếu minh bạch có thể gây ra hệ quả xã hội nghiêm trọng. Các cải cách minh bạch chịu được sự giám sát công khai rốt cuộc sẽ minh oan và khẳng định sự đúng đắn của các nhà lãnh đạo đặt sự công bằng lâu dài lên hàng đầu."
+      },
+      {
+        title: "Tư duy phản biện, sự kiên trì và giá trị của học tập",
+        words: ["transcend", "industrious", "perfunctory", "eloquent", "intrinsic", "integrity"],
+        text: "True education should transcend rote memorization and help learners cultivate intrinsic curiosity. An industrious mindset paired with academic integrity allows students to examine complex arguments rather than settle for a perfunctory summary. When young people learn to present an eloquent case backed by evidence, they become better equipped to contribute meaningfully to their communities.",
+        translation: "Giáo dục thực chất nên vượt lên trên việc học vẹt và giúp người học nuôi dưỡng sự tò mò nội tại. Tư duy chăm chỉ đi cùng tính liêm chính học thuật giúp người học xem xét các lập luận phức tạp thay vì dừng lại ở bản tóm tắt qua loa. Khi người trẻ học cách trình bày một quan điểm hùng hồn có bằng chứng hỗ trợ, họ sẽ có đủ năng lực hơn để đóng góp thiết thực cho cộng đồng."
+      }
+    ];
+
+    // =========================================================================
+    // 2. STATE & PERSISTENCE
+    // =========================================================================
+    const STORAGE_KEY = "vocab_studio_state_v1";
+
+    function defaultState() {
+      const srs = {};
+      RAW_VOCAB.forEach(w => {
+        srs[w.id] = {
+          level: 0,       // 0 = new, 1..5 = SRS levels
+          due: 0,         // timestamp ms when due
+          reviews: 0
+        };
+      });
+      return {
+        activeTab: "glossary",
+        glossaryView: "list",
+        shuffled: false,
+        orderIds: RAW_VOCAB.map(w => w.id),
+        cardIndex: 0,
+        cardFlipped: false,
+        srs,
+        srsQueue: [],
+        srsCurrentId: null,
+        srsRevealed: false,
+        sentences: [],
+        sentenceWordIdx: 0,
+        contextIdx: 0,
+        contextShowTrans: false
+      };
+    }
+
+    let state = loadState();
+
+    function loadState() {
+      try {
+        const raw = localStorage.getItem(STORAGE_KEY);
+        if (!raw) return defaultState();
+        const parsed = JSON.parse(raw);
+        const base = defaultState();
+        const mergedSrs = { ...base.srs, ...(parsed.srs || {}) };
+        return {
+          ...base,
+          ...parsed,
+          srs: mergedSrs,
+          orderIds: Array.isArray(parsed.orderIds) && parsed.orderIds.length === RAW_VOCAB.length
+            ? parsed.orderIds
+            : base.orderIds
+        };
+      } catch (e) {
+        return defaultState();
+      }
+    }
+
+    function saveState() {
+      try {
+        localStorage.setItem(STORAGE_KEY, JSON.stringify(state));
+      } catch (e) {
+        // ignore storage quota errors
+      }
+    }
+
+    // =========================================================================
+    // 3. AUDIO / SPEECH SYNTHESIS
+    // =========================================================================
+    let availableVoices = [];
+
+    function initVoices() {
+      if (!("speechSynthesis" in window)) return;
+      const load = () => {
+        availableVoices = window.speechSynthesis.getVoices().filter(v => v.lang.startsWith("en"));
+        const sel = document.getElementById("voice-select");
+        if (!sel) return;
+        const prev = sel.value;
+        sel.innerHTML = `<option value="">Giọng đọc tiếng Anh (Mặc định)</option>` + availableVoices.map((v, idx) =>
+          `<option value="${idx}">${v.name} (${v.lang})</option>`
+        ).join("");
+        if (prev && availableVoices[prev]) sel.value = prev;
+      };
+      load();
+      window.speechSynthesis.onvoiceschanged = load;
+    }
+
+    function speakWord(text) {
+      if (!text) return;
+      if (!("speechSynthesis" in window)) {
+        alert("Trình duyệt của bạn không hỗ trợ phát âm thanh SpeechSynthesis.");
+        return;
+      }
+      window.speechSynthesis.cancel();
+      const utter = new SpeechSynthesisUtterance(text);
+      utter.lang = "en-US";
+      utter.rate = 0.95;
+      const sel = document.getElementById("voice-select");
+      if (sel && sel.value !== "" && availableVoices[Number(sel.value)]) {
+        utter.voice = availableVoices[Number(sel.value)];
+      }
+      window.speechSynthesis.speak(utter);
+    }
+
+    // =========================================================================
+    // 4. HELPERS & RANDOMIZATION
+    // =========================================================================
+    function getWordById(id) {
+      return RAW_VOCAB.find(w => w.id === id);
+    }
+
+    function getOrderedWords() {
+      return state.orderIds.map(id => getWordById(id)).filter(Boolean);
+    }
+
+    function shuffleArray(arr) {
+      const copy = [...arr];
+      for (let i = copy.length - 1; i > 0; i--) {
+        const j = Math.floor(Math.random() * (i + 1));
+        [copy[i], copy[j]] = [copy[j], copy[i]];
+      }
+      return copy;
+    }
+
+    function toggleShuffle() {
+      state.shuffled = !state.shuffled;
+      if (state.shuffled) {
+        state.orderIds = shuffleArray(RAW_VOCAB.map(w => w.id));
+      } else {
+        state.orderIds = RAW_VOCAB.map(w => w.id);
+      }
+      state.cardIndex = 0;
+      state.cardFlipped = false;
+      saveState();
+      updateShuffleBadge();
+      renderGlossary();
+      buildSRSQueue();
+      renderSRS();
+    }
+
+    function reshuffleCurrentView() {
+      state.shuffled = true;
+      state.orderIds = shuffleArray(RAW_VOCAB.map(w => w.id));
+      state.cardIndex = 0;
+      state.cardFlipped = false;
+      saveState();
+      updateShuffleBadge();
+      renderGlossary();
+    }
+
+    function updateShuffleBadge() {
+      const label = document.getElementById("shuffle-label");
+      const btn = document.getElementById("btn-shuffle");
+      if (state.shuffled) {
+        label.textContent = "Thứ tự: Random";
+        btn.classList.add("bg-indigo-50", "text-indigo-700", "border-indigo-300");
+        btn.classList.remove("bg-white", "text-slate-700", "border-slate-200");
+      } else {
+        label.textContent = "Thứ tự: Gốc";
+        btn.classList.remove("bg-indigo-50", "text-indigo-700", "border-indigo-300");
+        btn.classList.add("bg-white", "text-slate-700", "border-slate-200");
+      }
+    }
+
+    function getWordSRSStatus(id) {
+      const item = state.srs[id] || { level: 0, due: 0, reviews: 0 };
+      if (item.level === 0 && item.reviews === 0) return "new";
+      if (item.level >= 2) return "mastered";
+      return "learning";
+    }
+
+    function updateProgressBar() {
+      const total = RAW_VOCAB.length;
+      let newCount = 0, learningCount = 0, masteredCount = 0, dueCount = 0;
+      const now = Date.now();
+
+      RAW_VOCAB.forEach(w => {
+        const s = state.srs[w.id] || { level: 0, due: 0, reviews: 0 };
+        const st = getWordSRSStatus(w.id);
+        if (st === "new") newCount++;
+        else if (st === "mastered") masteredCount++;
+        else learningCount++;
+
+        if (s.due <= now) dueCount++;
+      });
+
+      const pct = Math.round((masteredCount / total) * 100);
+      document.getElementById("total-word-badge").textContent = `${total} từ`;
+      document.getElementById("mastery-text").textContent = `${masteredCount} / ${total} từ (${pct}%)`;
+      document.getElementById("mastery-bar").style.width = `${pct}%`;
+      document.getElementById("stat-new").textContent = newCount;
+      document.getElementById("stat-learning").textContent = learningCount;
+      document.getElementById("stat-mastered").textContent = masteredCount;
+      document.getElementById("srs-due-badge").textContent = dueCount;
+    }
+
+    // =========================================================================
+    // 5. NAVIGATION
+    // =========================================================================
+    function switchTab(tabName) {
+      state.activeTab = tabName;
+      saveState();
+
+      document.querySelectorAll(".tab-btn").forEach(btn => {
+        const active = btn.dataset.tab === tabName;
+        btn.classList.toggle("bg-indigo-600", active);
+        btn.classList.toggle("text-white", active);
+        btn.classList.toggle("text-slate-600", !active);
+        btn.classList.toggle("hover:bg-slate-100", !active);
+      });
+
+      document.querySelectorAll(".tab-panel").forEach(panel => {
+        panel.classList.toggle("hidden", panel.id !== `tab-${tabName}`);
+      });
+
+      if (tabName === "glossary") renderGlossary();
+      if (tabName === "srs") {
+        buildSRSQueue();
+        renderSRS();
+      }
+      if (tabName === "quiz" && !currentQuiz) startNewQuiz();
+      if (tabName === "sentence") renderSentenceBuilder();
+      if (tabName === "context") renderContextPassage();
+    }
+
+    // =========================================================================
+    // 6. GLOSSARY & FLASHCARD
+    // =========================================================================
+    function getFilteredGlossaryWords() {
+      const q = (document.getElementById("search-input")?.value || "").trim().toLowerCase();
+      const statusFilter = document.getElementById("filter-status")?.value || "all";
+      const detailFilter = document.getElementById("filter-detail")?.value || "all";
+
+      return getOrderedWords().filter(w => {
+        if (detailFilter === "rich" && (!w.examples || w.examples.length === 0)) return false;
+        if (statusFilter !== "all" && getWordSRSStatus(w.id) !== statusFilter) return false;
+        if (!q) return true;
+        const hay = [
+          w.term,
+          w.meaning,
+          ...(w.collocations || []),
+          ...(w.examples || [])
+        ].join(" ").toLowerCase();
+        return hay.includes(q);
+      });
+    }
+
+    function setGlossaryView(view) {
+      state.glossaryView = view;
+      state.cardFlipped = false;
+      saveState();
+
+      document.getElementById("view-list-btn").className =
+        `px-3 py-1.5 rounded-lg text-xs font-bold cursor-pointer ${view === "list" ? "bg-white text-slate-900 shadow-sm" : "text-slate-600 hover:text-slate-900"}`;
+      document.getElementById("view-card-btn").className =
+        `px-3 py-1.5 rounded-lg text-xs font-bold cursor-pointer ${view === "card" ? "bg-white text-slate-900 shadow-sm" : "text-slate-600 hover:text-slate-900"}`;
+
+      document.getElementById("glossary-list-container").classList.toggle("hidden", view !== "list");
+      document.getElementById("glossary-card-container").classList.toggle("hidden", view !== "card");
+
+      if (view === "card") renderFlashcard();
+    }
+
+    function renderGlossary() {
+      updateProgressBar();
+      const list = getFilteredGlossaryWords();
+      const container = document.getElementById("glossary-list-container");
+
+      if (list.length === 0) {
+        container.innerHTML = `<div class="col-span-full bg-white rounded-2xl border border-slate-200 p-8 text-center text-sm text-slate-500">Không tìm thấy từ vựng phù hợp với bộ lọc hiện tại.</div>`;
+      } else {
+        container.innerHTML = list.map(w => {
+          const st = getWordSRSStatus(w.id);
+          const badge = st === "mastered"
+            ? `<span class="px-2 py-0.5 rounded-full text-[11px] font-bold bg-emerald-50 text-emerald-700">Đã thành thạo</span>`
+            : st === "learning"
+              ? `<span class="px-2 py-0.5 rounded-full text-[11px] font-bold bg-amber-50 text-amber-700">Đang học</span>`
+              : `<span class="px-2 py-0.5 rounded-full text-[11px] font-bold bg-slate-100 text-slate-600">Từ mới</span>`;
+
+          const collocHtml = w.collocations && w.collocations.length
+            ? `<div class="mt-2.5 flex flex-wrap gap-1.5">${w.collocations.map(c => `<span class="px-2 py-0.5 rounded-md bg-indigo-50/80 text-indigo-800 text-xs font-medium">${escapeHtml(c)}</span>`).join("")}</div>`
+            : "";
+
+          const exHtml = w.examples && w.examples.length
+            ? `<div class="mt-2.5 pl-3 border-l-2 border-indigo-200 space-y-1">${w.examples.map(ex => `<p class="text-xs italic text-slate-600">"${escapeHtml(ex)}"</p>`).join("")}</div>`
+            : "";
+
+          return `
+            <article class="bg-white rounded-2xl border border-slate-200/80 p-5 card-shadow flex flex-col justify-between hover:border-indigo-200 transition">
+              <div>
+                <div class="flex items-start justify-between gap-2">
+                  <div class="flex items-baseline gap-2 flex-wrap">
+                    <span class="mono text-xs text-slate-400">#${w.id}</span>
+                    <h3 class="text-xl font-extrabold text-slate-900">${escapeHtml(w.term)}</h3>
+                    <span class="text-xs font-semibold text-indigo-600 italic">${escapeHtml(w.pos || "")}</span>
+                  </div>
+                  <div class="flex items-center gap-1.5 shrink-0">
+                    ${badge}
+                    <button onclick="speakWord('${escapeJs(w.term)}')" title="Nghe phát âm"
+                      class="p-1.5 rounded-lg bg-slate-100 hover:bg-indigo-600 hover:text-white text-slate-700 transition cursor-pointer">
+                      🔊
+                    </button>
+                  </div>
+                </div>
+                <p class="text-sm font-medium text-slate-800 mt-2">${escapeHtml(w.meaning)}</p>
+                ${collocHtml}
+                ${exHtml}
+              </div>
+
+              <div class="mt-4 pt-3 border-t border-slate-100 flex items-center justify-between text-xs">
+                <button onclick="openSentenceForWord(${w.id})" class="font-semibold text-indigo-600 hover:underline cursor-pointer">
+                  ✍️ Đặt câu với từ này
+                </button>
+                <button onclick="addToSRSDueNow(${w.id})" class="font-semibold text-slate-500 hover:text-slate-800 cursor-pointer">
+                  🔁 Ôn ngay trong SRS
+                </button>
+              </div>
+            </article>
+          `;
+        }).join("");
+      }
+
+      if (state.glossaryView === "card") renderFlashcard();
+    }
+
+    function currentFlashcardWord() {
+      const list = getFilteredGlossaryWords();
+      if (!list.length) return null;
+      if (state.cardIndex >= list.length) state.cardIndex = 0;
+      if (state.cardIndex < 0) state.cardIndex = list.length - 1;
+      return list[state.cardIndex];
+    }
+
+    function renderFlashcard() {
+      const list = getFilteredGlossaryWords();
+      const word = currentFlashcardWord();
+      const counter = document.getElementById("fc-counter");
+      if (!word) {
+        counter.textContent = "0 / 0";
+        document.getElementById("fc-term").textContent = "Không có thẻ";
+        return;
+      }
+
+      counter.textContent = `Thẻ ${state.cardIndex + 1} / ${list.length}`;
+      document.getElementById("fc-pos-badge").textContent = `${word.pos || "Từ vựng"} • #${word.id}`;
+      document.getElementById("fc-term").textContent = word.term;
+      document.getElementById("fc-phonetic").textContent = `/${word.term}/`;
+      document.getElementById("fc-meaning").textContent = word.meaning;
+
+      const cWrap = document.getElementById("fc-collocations-wrap");
+      const cList = document.getElementById("fc-collocations");
+      if (word.collocations && word.collocations.length) {
+        cWrap.classList.remove("hidden");
+        cList.innerHTML = word.collocations.map(c => `<li>${escapeHtml(c)}</li>`).join("");
+      } else {
+        cWrap.classList.add("hidden");
+      }
+
+      const eWrap = document.getElementById("fc-examples-wrap");
+      const eText = document.getElementById("fc-example");
+      if (word.examples && word.examples.length) {
+        eWrap.classList.remove("hidden");
+        eText.textContent = word.examples.join(" • ");
+      } else {
+        eWrap.classList.add("hidden");
+      }
+
+      document.getElementById("fc-front").classList.toggle("hidden", state.cardFlipped);
+      document.getElementById("fc-back").classList.toggle("hidden", !state.cardFlipped);
+    }
+
+    function flipFlashcard() {
+      state.cardFlipped = !state.cardFlipped;
+      saveState();
+      renderFlashcard();
+    }
+
+    function nextFlashcard() {
+      const list = getFilteredGlossaryWords();
+      if (!list.length) return;
+      state.cardIndex = (state.cardIndex + 1) % list.length;
+      state.cardFlipped = false;
+      saveState();
+      renderFlashcard();
+    }
+
+    function prevFlashcard() {
+      const list = getFilteredGlossaryWords();
+      if (!list.length) return;
+      state.cardIndex = (state.cardIndex - 1 + list.length) % list.length;
+      state.cardFlipped = false;
+      saveState();
+      renderFlashcard();
+    }
+
+    // =========================================================================
+    // 7. SPACED REPETITION (SRS)
+    // =========================================================================
+    function buildSRSQueue() {
+      const now = Date.now();
+      const ordered = getOrderedWords();
+      const due = ordered.filter(w => (state.srs[w.id]?.due || 0) <= now);
+      state.srsQueue = due.map(w => w.id);
+      state.srsCurrentId = state.srsQueue[0] || null;
+      state.srsRevealed = false;
+      saveState();
+    }
+
+    function practiceExtraSRS() {
+      const sample = shuffleArray(RAW_VOCAB).slice(0, 10);
+      state.srsQueue = sample.map(w => w.id);
+      state.srsCurrentId = state.srsQueue[0] || null;
+      state.srsRevealed = false;
+      renderSRS();
+    }
+
+    function addToSRSDueNow(wordId) {
+      state.srs[wordId] = {
+        ...(state.srs[wordId] || { level: 0, reviews: 0 }),
+        due: 0
+      };
+      saveState();
+      switchTab("srs");
+    }
+
+    function currentSRSWord() {
+      return state.srsCurrentId ? getWordById(state.srsCurrentId) : null;
+    }
+
+    function renderSRS() {
+      updateProgressBar();
+      const rem = state.srsQueue.length;
+      document.getElementById("srs-remaining-label").textContent = `${rem} từ cần ôn`;
+
+      const activeArea = document.getElementById("srs-active-area");
+      const doneArea = document.getElementById("srs-done-area");
+      const word = currentSRSWord();
+
+      if (!word) {
+        activeArea.classList.add("hidden");
+        doneArea.classList.remove("hidden");
+        return;
+      }
+
+      activeArea.classList.remove("hidden");
+      doneArea.classList.add("hidden");
+
+      const srsInfo = state.srs[word.id] || { level: 0 };
+      document.getElementById("srs-card-level").textContent = `Cấp độ SRS: ${srsInfo.level} • #${word.id}`;
+      document.getElementById("srs-term").textContent = word.term;
+      document.getElementById("srs-phonetic").textContent = `${word.pos || ""} • /${word.term}/`;
+      document.getElementById("srs-meaning").textContent = word.meaning;
+
+      const extraLines = [
+        ...(word.collocations || []).map(c => `Cụm từ: ${c}`),
+        ...(word.examples || []).map(e => `Ví dụ: "${e}"`)
+      ];
+      document.getElementById("srs-example").textContent = extraLines.join(" | ") || "Hãy tự đặt một câu với từ này để ghi nhớ lâu hơn.";
+
+      document.getElementById("srs-answer-box").classList.toggle("hidden", !state.srsRevealed);
+      document.getElementById("srs-rating-buttons").classList.toggle("hidden", !state.srsRevealed);
+      document.getElementById("srs-show-btn").classList.toggle("hidden", state.srsRevealed);
+    }
+
+    function revealSRSAnswer() {
+      state.srsRevealed = true;
+      renderSRS();
+    }
+
+    function rateSRSCard(quality) {
+      const word = currentSRSWord();
+      if (!word) return;
+      const cur = state.srs[word.id] || { level: 0, due: 0, reviews: 0 };
+      const now = Date.now();
+      const dayMs = 24 * 60 * 60 * 1000;
+
+      let nextLevel = cur.level;
+      let nextDue = now;
+
+      if (quality === 1) {
+        nextLevel = 0;
+        nextDue = now + 10 * 60 * 1000; // 10 mins
+      } else if (quality === 2) {
+        nextLevel = Math.max(1, cur.level);
+        nextDue = now + 1 * dayMs;
+      } else if (quality === 3) {
+        nextLevel = Math.min(5, cur.level + 1);
+        const days = [1, 3, 7, 14, 30][Math.max(0, nextLevel - 1)] || 3;
+        nextDue = now + days * dayMs;
+      } else if (quality === 4) {
+        nextLevel = Math.min(5, cur.level + 2);
+        const days = [3, 7, 14, 30, 60][Math.max(0, nextLevel - 1)] || 7;
+        nextDue = now + days * dayMs;
+      }
+
+      state.srs[word.id] = {
+        level: nextLevel,
+        due: nextDue,
+        reviews: (cur.reviews || 0) + 1
+      };
+
+      // Remove current from active queue
+      state.srsQueue.shift();
+      if (quality === 1) {
+        // Re-queue later in current session
+        state.srsQueue.splice(Math.min(2, state.srsQueue.length), 0, word.id);
+      }
+
+      state.srsCurrentId = state.srsQueue[0] || null;
+      state.srsRevealed = false;
+      saveState();
+      renderSRS();
+    }
+
+    function resetAllSRS() {
+      if (!confirm("Bạn có chắc muốn đặt lại toàn bộ lịch lặp lại ngắt quãng về trạng thái ban đầu?")) return;
+      const fresh = defaultState();
+      state.srs = fresh.srs;
+      saveState();
+      buildSRSQueue();
+      renderSRS();
+    }
+
+    // =========================================================================
+    // 8. QUIZ ENGINE (TRẮC NGHIỆM)
+    // =========================================================================
+    let currentQuiz = null;
+
+    function startNewQuiz() {
+      const count = Number(document.getElementById("quiz-length")?.value || 10);
+      const pool = state.shuffled ? getOrderedWords() : shuffleArray(RAW_VOCAB);
+      const selected = pool.slice(0, Math.min(count, pool.length));
+
+      const questions = selected.map((target, idx) => {
+        const distractors = shuffleArray(RAW_VOCAB.filter(w => w.id !== target.id)).slice(0, 3);
+        const mode = idx % 2 === 0 ? "meaning" : "term";
+
+        if (mode === "meaning") {
+          const options = shuffleArray([
+            { text: target.meaning, isCorrect: true, word: target },
+            ...distractors.map(d => ({ text: d.meaning, isCorrect: false, word: d }))
+          ]);
+          return {
+            prompt: `Nghĩa tiếng Việt của từ "${target.term}" (${target.pos || "từ vựng"}) là gì?`,
+            subhint: target.examples && target.examples.length
+              ? `Ngữ cảnh gợi ý: "${target.examples[0].replace(new RegExp(target.term, "gi"), "_____")}"`
+              : "Chọn đáp án chính xác nhất.",
+            audioText: target.term,
+            options,
+            answered: false
+          };
+        } else {
+          const options = shuffleArray([
+            { text: target.term, isCorrect: true, word: target },
+            ...distractors.map(d => ({ text: d.term, isCorrect: false, word: d }))
+          ]);
+          return {
+            prompt: `Từ tiếng Anh nào có nghĩa là: "${target.meaning}"?`,
+            subhint: target.collocations && target.collocations.length
+              ? `Collocation đi kèm: ${target.collocations[0]}`
+              : `Loại từ: ${target.pos || "từ vựng"}`,
+            audioText: target.term,
+            options,
+            answered: false
+          };
+        }
+      });
+
+      currentQuiz = {
+        questions,
+        index: 0,
+        score: 0
+      };
+
+      document.getElementById("quiz-question-area").classList.remove("hidden");
+      document.getElementById("quiz-summary-area").classList.add("hidden");
+      renderQuizQuestion();
+    }
+
+    function renderQuizQuestion() {
+      if (!currentQuiz) return;
+      const q = currentQuiz.questions[currentQuiz.index];
+      document.getElementById("quiz-progress").textContent = `Câu ${currentQuiz.index + 1} / ${currentQuiz.questions.length}`;
+      document.getElementById("quiz-score").textContent = `Điểm: ${currentQuiz.score}`;
+      document.getElementById("quiz-prompt").textContent = q.prompt;
+      document.getElementById("quiz-subhint").textContent = q.subhint;
+      document.getElementById("quiz-feedback").classList.add("hidden");
+      document.getElementById("quiz-next-btn").disabled = true;
+
+      const optContainer = document.getElementById("quiz-options");
+      const letters = ["A", "B", "C", "D"];
+      optContainer.innerHTML = q.options.map((opt, i) => `
+        <button onclick="selectQuizOption(${i})"
+          class="quiz-opt-btn w-full text-left p-3.5 rounded-xl border border-slate-200 bg-white hover:border-indigo-400 hover:bg-indigo-50/40 transition flex items-start gap-3 cursor-pointer">
+          <span class="w-6 h-6 rounded-lg bg-slate-100 text-slate-700 font-bold text-xs flex items-center justify-center shrink-0 mt-0.5">${letters[i]}</span>
+          <span class="text-sm font-semibold text-slate-800">${escapeHtml(opt.text)}</span>
+        </button>
+      `).join("");
+    }
+
+    function speakCurrentQuizWord() {
+      if (currentQuiz && currentQuiz.questions[currentQuiz.index]) {
+        speakWord(currentQuiz.questions[currentQuiz.index].audioText);
+      }
+    }
+
+    function selectQuizOption(optIdx) {
+      if (!currentQuiz) return;
+      const q = currentQuiz.questions[currentQuiz.index];
+      if (q.answered) return;
+      q.answered = true;
+
+      const chosen = q.options[optIdx];
+      const correctOpt = q.options.find(o => o.isCorrect);
+      const btns = document.querySelectorAll(".quiz-opt-btn");
+
+      btns.forEach((btn, idx) => {
+        btn.disabled = true;
+        btn.classList.remove("hover:border-indigo-400", "hover:bg-indigo-50/40");
+        if (q.options[idx].isCorrect) {
+          btn.classList.add("border-emerald-500", "bg-emerald-50");
+        } else if (idx === optIdx) {
+          btn.classList.add("border-rose-500", "bg-rose-50");
+        }
+      });
+
+      const fb = document.getElementById("quiz-feedback");
+      fb.classList.remove("hidden");
+
+      if (chosen.isCorrect) {
+        currentQuiz.score++;
+        document.getElementById("quiz-score").textContent = `Điểm: ${currentQuiz.score}`;
+        fb.className = "p-4 rounded-xl text-sm border bg-emerald-50 border-emerald-200 text-emerald-900";
+        fb.innerHTML = `<strong>Chính xác!</strong> Từ <strong>${escapeHtml(correctOpt.word.term)}</strong> nghĩa là: <em>${escapeHtml(correctOpt.word.meaning)}</em>.`;
+      } else {
+        fb.className = "p-4 rounded-xl text-sm border bg-rose-50 border-rose-200 text-rose-900";
+        fb.innerHTML = `<strong>Chưa chính xác.</strong> Đáp án đúng là <strong>${escapeHtml(correctOpt.text)}</strong> (từ <strong>${escapeHtml(correctOpt.word.term)}</strong>: ${escapeHtml(correctOpt.word.meaning)}).`;
+      }
+
+      document.getElementById("quiz-next-btn").disabled = false;
+      document.getElementById("quiz-next-btn").textContent =
+        currentQuiz.index === currentQuiz.questions.length - 1 ? "Xem kết quả →" : "Câu tiếp theo →";
+    }
+
+    function nextQuizQuestion() {
+      if (!currentQuiz) return;
+      if (currentQuiz.index < currentQuiz.questions.length - 1) {
+        currentQuiz.index++;
+        renderQuizQuestion();
+      } else {
+        document.getElementById("quiz-question-area").classList.add("hidden");
+        document.getElementById("quiz-summary-area").classList.remove("hidden");
+        const total = currentQuiz.questions.length;
+        const pct = Math.round((currentQuiz.score / total) * 100);
+        document.getElementById("quiz-final-score").textContent = `Bạn đạt ${currentQuiz.score} / ${total} câu (${pct}%)`;
+        document.getElementById("quiz-final-comment").textContent =
+          pct >= 80 ? "Tuyệt vời! Bạn nắm vững vốn từ vựng này rất chắc chắn." :
+          pct >= 50 ? "Khá tốt! Hãy ôn thêm qua thẻ lật và lặp lại ngắt quãng để tăng độ phản xạ nhé." :
+          "Hãy xem lại phần Glossary và luyện lặp lại ngắt quãng để ghi nhớ sâu hơn.";
+      }
+    }
+
+    // =========================================================================
+    // 9. SENTENCE BUILDER (ĐẶT CÂU)
+    // =========================================================================
+    function openSentenceForWord(wordId) {
+      const ordered = getOrderedWords();
+      const idx = ordered.findIndex(w => w.id === wordId);
+      if (idx !== -1) {
+        state.sentenceWordIdx = idx;
+        saveState();
+      }
+      switchTab("sentence");
+    }
+
+    function currentSentenceWord() {
+      const ordered = getOrderedWords();
+      if (!ordered.length) return RAW_VOCAB[0];
+      if (state.sentenceWordIdx >= ordered.length) state.sentenceWordIdx = 0;
+      if (state.sentenceWordIdx < 0) state.sentenceWordIdx = ordered.length - 1;
+      return ordered[state.sentenceWordIdx];
+    }
+
+    function renderSentenceBuilder() {
+      const w = currentSentenceWord();
+      document.getElementById("sb-word").textContent = `${w.term} (${w.pos || ""})`;
+      document.getElementById("sb-meaning").textContent = `Nghĩa: ${w.meaning}`;
+      document.getElementById("sb-collocs").textContent = w.collocations && w.collocations.length
+        ? `Collocations gợi ý: ${w.collocations.join(" • ")}`
+        : "Gợi ý: Viết câu gắn với thực tế học tập hoặc công việc của bạn.";
+
+      const sampleText = (w.examples && w.examples[0])
+        ? w.examples[0]
+        : `Using the word "${w.term}" effectively can make your writing more precise.`;
+      document.getElementById("sb-sample-text").textContent = sampleText;
+      document.getElementById("sb-sample-box").classList.add("hidden");
+      document.getElementById("sb-feedback").classList.add("hidden");
+      document.getElementById("sb-textarea").value = "";
+      document.getElementById("sb-saved-status").textContent = "";
+
+      renderSentenceHistory();
+    }
+
+    function nextSentencePrompt() {
+      const ordered = getOrderedWords();
+      state.sentenceWordIdx = (state.sentenceWordIdx + 1) % ordered.length;
+      saveState();
+      renderSentenceBuilder();
+    }
+
+    function prevSentencePrompt() {
+      const ordered = getOrderedWords();
+      state.sentenceWordIdx = (state.sentenceWordIdx - 1 + ordered.length) % ordered.length;
+      saveState();
+      renderSentenceBuilder();
+    }
+
+    function toggleSampleSentence() {
+      document.getElementById("sb-sample-box").classList.toggle("hidden");
+    }
+
+    function speakUserSentence() {
+      const txt = document.getElementById("sb-textarea").value.trim();
+      if (!txt) {
+        alert("Vui lòng nhập câu tiếng Anh trước khi nghe.");
+        return;
+      }
+      speakWord(txt);
+    }
+
+    function checkUserSentence() {
+      const w = currentSentenceWord();
+      const sent = document.getElementById("sb-textarea").value.trim();
+      const fb = document.getElementById("sb-feedback");
+      fb.classList.remove("hidden");
+
+      if (!sent) {
+        fb.className = "p-4 rounded-xl border text-sm bg-amber-50 border-amber-200 text-amber-900";
+        fb.textContent = "Bạn chưa nhập câu nào. Hãy thử viết một câu hoàn chỉnh nhé!";
+        return;
+      }
+
+      const wordCount = sent.split(/\s+/).filter(Boolean).length;
+      const root = w.term.toLowerCase().replace(/[^a-z\s]/g, "").trim();
+      const stem = root.length > 5 ? root.slice(0, root.length - 2) : root;
+      const hasTarget = sent.toLowerCase().includes(stem);
+      const startsCapital = /^[A-Z]/.test(sent);
+      const endsPunct = /[.!?]$/.test(sent);
+
+      const notes = [];
+      if (!hasTarget) notes.push(`Chưa thấy từ mục tiêu "${w.term}" (hoặc dạng biến thể) xuất hiện rõ trong câu.`);
+      if (wordCount < 5) notes.push("Câu hơi ngắn, hãy mở rộng thêm mệnh đề hoặc cụm trạng từ để luyện ngữ cảnh tốt hơn.");
+      if (!startsCapital) notes.push("Nên viết hoa chữ cái đầu câu.");
+      if (!endsPunct) notes.push("Nên kết thúc câu bằng dấu chấm (.), dấu hỏi (?) hoặc dấu chấm than (!).");
+
+      // Save sentence to history
+      state.sentences.unshift({
+        id: Date.now(),
+        word: w.term,
+        sentence: sent,
+        passed: hasTarget && wordCount >= 5
+      });
+      state.sentences = state.sentences.slice(0, 30);
+      saveState();
+      renderSentenceHistory();
+      document.getElementById("sb-saved-status").textContent = "✓ Đã lưu câu";
+
+      if (notes.length === 0) {
+        fb.className = "p-4 rounded-xl border text-sm bg-emerald-50 border-emerald-200 text-emerald-900";
+        fb.innerHTML = `<strong>Câu đạt chuẩn tốt!</strong> Bạn đã dùng từ <strong>${escapeHtml(w.term)}</strong> trong một câu đầy đủ (${wordCount} từ). Hãy bấm "Nghe câu bạn viết" để luyện ngữ điệu.`;
+      } else {
+        fb.className = "p-4 rounded-xl border text-sm bg-indigo-50 border-indigo-200 text-indigo-900";
+        fb.innerHTML = `<strong>Gợi ý cải thiện câu:</strong><ul class="list-disc list-inside mt-1 space-y-0.5">${notes.map(n => `<li>${escapeHtml(n)}</li>`).join("")}</ul>`;
+      }
+    }
+
+    function renderSentenceHistory() {
+      const box = document.getElementById("sb-history");
+      if (!state.sentences.length) {
+        box.innerHTML = `<p class="text-xs text-slate-400">Chưa có câu nào được lưu.</p>`;
+        return;
+      }
+      box.innerHTML = state.sentences.map(item => `
+        <div class="p-3 rounded-xl bg-slate-50 border border-slate-200/70 flex items-center justify-between gap-3">
+          <div class="min-w-0">
+            <span class="inline-block px-2 py-0.5 rounded bg-indigo-100 text-indigo-800 text-[11px] font-bold mr-2">${escapeHtml(item.word)}</span>
+            <span class="text-sm text-slate-800">${escapeHtml(item.sentence)}</span>
+          </div>
+          <button onclick="speakWord('${escapeJs(item.sentence)}')" class="shrink-0 text-xs font-semibold text-indigo-600 hover:underline cursor-pointer">
+            🔊 Nghe
+          </button>
+        </div>
+      `).join("");
+    }
+
+    // =========================================================================
+    // 10. VOCAB IN CONTEXT
+    // =========================================================================
+    function renderContextPassage() {
+      const passage = CONTEXT_PASSAGES[state.contextIdx] || CONTEXT_PASSAGES[0];
+      document.getElementById("ctx-counter").textContent = `${state.contextIdx + 1} / ${CONTEXT_PASSAGES.length}`;
+      document.getElementById("ctx-title").textContent = passage.title;
+
+      // Highlight target words in the text
+      let html = escapeHtml(passage.text);
+      passage.words.forEach(term => {
+        const regex = new RegExp(`\\b(${escapeRegex(term)}[a-z]*)\\b`, "gi");
+        html = html.replace(regex, match =>
+          `<button type="button" onclick="inspectContextWord('${escapeJs(term)}', '${escapeJs(match)}')" class="px-1.5 py-0.5 mx-0.5 rounded-md bg-indigo-100 hover:bg-indigo-600 text-indigo-800 hover:text-white font-bold transition cursor-pointer">${match}</button>`
+        );
+      });
+
+      document.getElementById("ctx-body").innerHTML = html;
+      const transEl = document.getElementById("ctx-translation");
+      transEl.textContent = passage.translation;
+      transEl.classList.toggle("hidden", !state.contextShowTrans);
+    }
+
+    function inspectContextWord(baseTerm, matchedForm) {
+      speakWord(matchedForm || baseTerm);
+      const found = RAW_VOCAB.find(w => w.term.toLowerCase() === baseTerm.toLowerCase());
+      const insp = document.getElementById("ctx-inspector");
+      if (!found) {
+        insp.innerHTML = `<p class="font-bold text-slate-900">${escapeHtml(matchedForm)}</p><p class="text-xs text-slate-500 mt-1">Từ xuất hiện trong đoạn văn.</p>`;
+        return;
+      }
+      insp.innerHTML = `
+        <div class="flex items-center justify-between">
+          <div>
+            <h4 class="text-lg font-extrabold text-slate-900">${escapeHtml(found.term)}</h4>
+            <span class="text-xs font-semibold text-indigo-600">${escapeHtml(found.pos || "")}</span>
+          </div>
+          <button onclick="speakWord('${escapeJs(found.term)}')" class="px-2.5 py-1 rounded-lg bg-indigo-600 text-white text-xs font-semibold cursor-pointer">
+            🔊 Nghe
+          </button>
+        </div>
+        <p class="text-sm font-medium text-slate-800">${escapeHtml(found.meaning)}</p>
+        ${found.collocations && found.collocations.length
+          ? `<div class="text-xs text-slate-600 bg-white p-2.5 rounded-xl border border-slate-200"><strong>Collocations:</strong> ${escapeHtml(found.collocations.join(", "))}</div>`
+          : ""}
+        <div class="flex gap-2 pt-1">
+          <button onclick="openSentenceForWord(${found.id})" class="flex-1 py-1.5 px-2.5 rounded-lg bg-white border border-slate-200 hover:border-indigo-300 text-xs font-semibold text-slate-700 cursor-pointer">
+            ✍️ Đặt câu
+          </button>
+          <button onclick="addToSRSDueNow(${found.id})" class="flex-1 py-1.5 px-2.5 rounded-lg bg-indigo-50 hover:bg-indigo-100 text-xs font-semibold text-indigo-700 cursor-pointer">
+            🔁 Ôn SRS
+          </button>
+        </div>
+      `;
+    }
+
+    function speakCurrentPassage() {
+      const passage = CONTEXT_PASSAGES[state.contextIdx] || CONTEXT_PASSAGES[0];
+      speakWord(passage.text);
+    }
+
+    function toggleContextTranslation() {
+      state.contextShowTrans = !state.contextShowTrans;
+      saveState();
+      document.getElementById("ctx-translation").classList.toggle("hidden", !state.contextShowTrans);
+    }
+
+    function nextPassage() {
+      state.contextIdx = (state.contextIdx + 1) % CONTEXT_PASSAGES.length;
+      state.contextShowTrans = false;
+      saveState();
+      renderContextPassage();
+    }
+
+    function prevPassage() {
+      state.contextIdx = (state.contextIdx - 1 + CONTEXT_PASSAGES.length) % CONTEXT_PASSAGES.length;
+      state.contextShowTrans = false;
+      saveState();
+      renderContextPassage();
+    }
+
+    // =========================================================================
+    // 11. ESCAPE UTILITIES & INIT
+    // =========================================================================
+    function escapeHtml(str) {
+      return String(str || "")
+        .replace(/&/g, "&amp;")
+        .replace(/</g, "&lt;")
+        .replace(/>/g, "&gt;")
+        .replace(/"/g, "&quot;")
+        .replace(/'/g, "&#39;");
+    }
+
+    function escapeJs(str) {
+      return String(str || "").replace(/\\/g, "\\\\").replace(/'/g, "\\'");
+    }
+
+    function escapeRegex(str) {
+      return String(str || "").replace(/[.*+?^${}()|[\]\\]/g, "\\$&");
+    }
+
+    // Boot
+    initVoices();
+    updateShuffleBadge();
+    setGlossaryView(state.glossaryView || "list");
+    switchTab(state.activeTab || "glossary");
+  </script>
+</body>
+</html>
